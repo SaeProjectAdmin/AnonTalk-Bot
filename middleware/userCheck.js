@@ -63,4 +63,4 @@ module.exports = async (ctx, callback) => {
         console.error('Error handling user data:', err);
         ctx.telegram.sendMessage(ctx.chat.id, "An error occurred during user setup.");
     }
-};
+};           
