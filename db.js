@@ -6,7 +6,7 @@ const cfg = require('./config');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
-    credential: admin.credential.cert(require(cfg.FIREBASE_CREDENTIALS)),
+    credential: admin.credential.cert(cfg.FIREBASE_CREDENTIALS),
     databaseURL: cfg.DB_URL
 });
 
