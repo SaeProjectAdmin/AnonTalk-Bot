@@ -23,6 +23,6 @@
     "firebase": "^10.13.2",
     "firebase-admin": "^12.5.0",
     "telegraf": "^4.7.0",
-    "vercel": "^32.3.0"
+    "vercel": "^28.18.5"
   }
 }
