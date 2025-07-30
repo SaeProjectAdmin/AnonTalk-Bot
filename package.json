@@ -9,7 +9,7 @@
     "deploy": "firebase deploy",
     "deploy:hosting": "firebase deploy --only apphosting",
     "deploy:functions": "firebase deploy --only functions",
-    "build": "npm install",
+    "build": "echo 'No build step required'",
     "test": "echo 'No tests specified'",
     "serve": "node index.js"
   },
