@@ -109,6 +109,11 @@ async function initializeBot() {
         
         console.log('🤖 Bot instance created');
         
+        // Import menu modules
+        const menuCommand = require('./command/menu-command');
+        const menuCallbacks = require('./command/menu-callbacks');
+        const menu = require('./command/menu');
+        
         // Enhanced start command with menu
         bot.start(async (ctx) => {
             try {
@@ -120,266 +125,33 @@ async function initializeBot() {
             }
         });
         
-        // Menu callback handlers
-        bot.action('menu_join', (ctx) => {
-            const joinKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '🎮 Gaming', callback_data: 'join_gaming' },
-                        { text: '💬 General', callback_data: 'join_general' }
-                    ],
-                    [
-                        { text: '📚 Education', callback_data: 'join_education' },
-                        { text: '🎵 Music', callback_data: 'join_music' }
-                    ],
-                    [
-                        { text: '🎬 Entertainment', callback_data: 'join_entertainment' },
-                        { text: '💻 Technology', callback_data: 'join_technology' }
-                    ],
-                    [
-                        { text: '🏃 Sports', callback_data: 'join_sports' },
-                        { text: '🍔 Food', callback_data: 'join_food' }
-                    ],
-                    [
-                        { text: '✈️ Travel', callback_data: 'join_travel' }
-                    ],
-                    [
-                        { text: '🔙 Back to Menu', callback_data: 'menu_main' }
-                    ]
-                ]
-            };
-            
-            ctx.editMessageText('🏠 Pilih kategori room yang ingin Anda masuki:',
-                              { reply_markup: joinKeyboard });
-        });
+        // Import auto menu handlers
+        const autoMenu = require('./command/auto-menu');
         
-        bot.action('menu_lang', (ctx) => {
-            const langKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '🇮🇩 Indonesia', callback_data: 'lang_id' },
-                        { text: '🇺🇸 English', callback_data: 'lang_en' }
-                    ],
-                    [
-                        { text: '🇯🇵 Jawa', callback_data: 'lang_jw' }
-                    ],
-                    [
-                        { text: '🔙 Back to Menu', callback_data: 'menu_main' }
-                    ]
-                ]
-            };
-            
-            ctx.editMessageText('🌍 Pilih bahasa yang Anda inginkan:',
-                              { reply_markup: langKeyboard });
-        });
+        // Menu commands
+        bot.command('menu', menuCommand);
+        bot.command('auto', autoMenu.autoMenuHandler);
+        bot.command('quick', autoMenu.quickMenuHandler);
+        bot.command('welcome', autoMenu.welcomeMenuHandler);
         
-        bot.action('menu_vip', (ctx) => {
-            const vipKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '💰 Daily VIP', callback_data: 'vip_daily' },
-                        { text: '💰 Weekly VIP', callback_data: 'vip_weekly' }
-                    ],
-                    [
-                        { text: '💰 Monthly VIP', callback_data: 'vip_monthly' }
-                    ],
-                    [
-                        { text: '🔙 Back to Menu', callback_data: 'menu_main' }
-                    ]
-                ]
-            };
-            
-            ctx.editMessageText('💎 Fitur VIP AnonTalk Bot:\n\n' +
-                              '✨ Keunggulan VIP:\n' +
-                              '• Buat room pribadi\n' +
-                              '• Prioritas masuk room\n' +
-                              '• Avatar custom\n' +
-                              '• Emoji unlimited\n\n' +
-                              '💰 Pilih paket VIP:',
-                              { reply_markup: vipKeyboard });
-        });
-        
-        bot.action('menu_help', (ctx) => {
-            const helpKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '📋 Commands', callback_data: 'help_commands' },
-                        { text: '❓ FAQ', callback_data: 'help_faq' }
-                    ],
-                    [
-                        { text: '🔙 Back to Menu', callback_data: 'menu_main' }
-                    ]
-                ]
-            };
-            
-            ctx.editMessageText('📋 Bantuan AnonTalk Bot:\n\n' +
-                              'Pilih jenis bantuan yang Anda butuhkan:',
-                              { reply_markup: helpKeyboard });
-        });
-        
-        bot.action('menu_rooms', (ctx) => {
-            const roomsKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '🎮 Gaming (3 rooms)', callback_data: 'rooms_gaming' },
-                        { text: '💬 General (3 rooms)', callback_data: 'rooms_general' }
-                    ],
-                    [
-                        { text: '📚 Education (3 rooms)', callback_data: 'rooms_education' },
-                        { text: '🎵 Music (3 rooms)', callback_data: 'rooms_music' }
-                    ],
-                    [
-                        { text: '🎬 Entertainment (3 rooms)', callback_data: 'rooms_entertainment' },
-                        { text: '💻 Technology (3 rooms)', callback_data: 'rooms_technology' }
-                    ],
-                    [
-                        { text: '🏃 Sports (3 rooms)', callback_data: 'rooms_sports' },
-                        { text: '🍔 Food (3 rooms)', callback_data: 'rooms_food' }
-                    ],
-                    [
-                        { text: '✈️ Travel (3 rooms)', callback_data: 'rooms_travel' }
-                    ],
-                    [
-                        { text: '🔙 Back to Menu', callback_data: 'menu_main' }
-                    ]
-                ]
-            };
-            
-            ctx.editMessageText('🏠 Daftar Room Tersedia:\n\n' +
-                              'Total: 24 rooms aktif di 9 kategori',
-                              { reply_markup: roomsKeyboard });
-        });
-        
-        bot.action('menu_settings', (ctx) => {
-            const settingsKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '👤 Avatar', callback_data: 'settings_avatar' },
-                        { text: '🔔 Notifications', callback_data: 'settings_notifications' }
-                    ],
-                    [
-                        { text: '🔒 Privacy', callback_data: 'settings_privacy' },
-                        { text: '🎨 Theme', callback_data: 'settings_theme' }
-                    ],
-                    [
-                        { text: '🔙 Back to Menu', callback_data: 'menu_main' }
-                    ]
-                ]
-            };
-            
-            ctx.editMessageText('⚙️ Pengaturan AnonTalk Bot:\n\n' +
-                              'Pilih pengaturan yang ingin Anda ubah:',
-                              { reply_markup: settingsKeyboard });
-        });
-        
-        // Back to main menu
-        bot.action('menu_main', (ctx) => {
-            const menuKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '🏠 Join Room', callback_data: 'menu_join' },
-                        { text: '🌍 Language', callback_data: 'menu_lang' }
-                    ],
-                    [
-                        { text: '💎 VIP Info', callback_data: 'menu_vip' },
-                        { text: '📋 Help', callback_data: 'menu_help' }
-                    ],
-                    [
-                        { text: '🏆 Rooms List', callback_data: 'menu_rooms' },
-                        { text: '⚙️ Settings', callback_data: 'menu_settings' }
-                    ]
-                ]
-            };
-            
-            ctx.editMessageText('🎉 Selamat datang di AnonTalk Bot!\n\n' +
-                              '🤖 Bot untuk chat anonymous dengan user lain\n\n' +
-                              '📱 Pilih menu di bawah ini:',
-                              { reply_markup: menuKeyboard });
-        });
-        
-        // Handle join room callbacks
-        bot.action(/join_(.+)/, (ctx) => {
-            const category = ctx.match[1];
-            ctx.answerCbQuery(`Joining ${category} room...`);
-            ctx.reply(`🏠 Anda akan masuk ke room ${category}.\n\n` +
-                     `Fitur ini akan segera tersedia!`);
-        });
-        
-        // Handle language callbacks
-        bot.action(/lang_(.+)/, (ctx) => {
-            const lang = ctx.match[1];
-            const langNames = {
-                'id': 'Indonesia',
-                'en': 'English',
-                'jw': 'Jawa'
-            };
-            ctx.answerCbQuery(`Language set to ${langNames[lang]}`);
-            ctx.reply(`🌍 Bahasa diubah ke: ${langNames[lang]}`);
-        });
-        
-        // Handle VIP callbacks
-        bot.action(/vip_(.+)/, (ctx) => {
-            const period = ctx.match[1];
-            const prices = {
-                'daily': 'Rp 5.000',
-                'weekly': 'Rp 25.000',
-                'monthly': 'Rp 75.000'
-            };
-            ctx.answerCbQuery(`VIP ${period} selected`);
-            ctx.reply(`💎 VIP ${period} dipilih!\n\n` +
-                     `💰 Harga: ${prices[period]}\n\n` +
-                     `Untuk pembayaran, hubungi admin.`);
-        });
-        
-        // Handle help callbacks
-        bot.action(/help_(.+)/, (ctx) => {
-            const helpType = ctx.match[1];
-            if (helpType === 'commands') {
-                ctx.reply('📋 Perintah AnonTalk Bot:\n\n' +
-                         '🎯 Dasar:\n' +
-                         '/start - Mulai bot\n' +
-                         '/help - Bantuan ini\n' +
-                         '/lang - Pilih bahasa\n\n' +
-                         '🏠 Room:\n' +
-                         '/join - Masuk room\n' +
-                         '/rooms - Lihat daftar room\n' +
-                         '/exit - Keluar dari room\n' +
-                         '/list - Lihat user di room\n\n' +
-                         '⚙️ Settings:\n' +
-                         '/avatar - Set avatar\n' +
-                         '/cancel - Batalkan aksi\n\n' +
-                         '💎 VIP:\n' +
-                         '/vip - Info VIP\n' +
-                         '/create-room - Buat room VIP\n\n' +
-                         '💝 Lainnya:\n' +
-                         '/donate - Donasi');
-            } else if (helpType === 'faq') {
-                ctx.reply('❓ FAQ AnonTalk Bot:\n\n' +
-                         'Q: Bagaimana cara masuk room?\n' +
-                         'A: Gunakan /join atau menu "Join Room"\n\n' +
-                         'Q: Apakah chat benar-benar anonymous?\n' +
-                         'A: Ya, semua chat di room bersifat anonymous\n\n' +
-                         'Q: Bagaimana cara menjadi VIP?\n' +
-                         'A: Gunakan menu "VIP Info" atau /vip');
+        // Menu callback handlers using the new menu system
+        bot.action(/^menu_/, async (ctx) => {
+            try {
+                await menuCallbacks.handleMenuCallbacks(ctx);
+            } catch (error) {
+                console.error('Error in menu callback:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
             }
         });
         
-        // Handle settings callbacks
-        bot.action(/settings_(.+)/, (ctx) => {
-            const setting = ctx.match[1];
-            ctx.answerCbQuery(`Setting ${setting} selected`);
-            ctx.reply(`⚙️ Pengaturan ${setting} akan segera tersedia!`);
-        });
-        
-        // Handle rooms callbacks
-        bot.action(/rooms_(.+)/, (ctx) => {
-            const category = ctx.match[1];
-            ctx.answerCbQuery(`Rooms ${category} selected`);
-            ctx.reply(`🏠 Room ${category}:\n\n` +
-                     `• ${category} Room 1\n` +
-                     `• ${category} Room 2\n` +
-                     `• ${category} Room 3\n\n` +
-                     `Gunakan menu "Join Room" untuk masuk.`);
+        // Handle all other callbacks using the new menu system
+        bot.action(/^(join_|lang_|vip_|help_|settings_|rooms_|donate_|pay_)/, async (ctx) => {
+            try {
+                await menuCallbacks.handleMenuCallbacks(ctx);
+            } catch (error) {
+                console.error('Error in callback handler:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
         });
         
         // Help command
@@ -405,57 +177,43 @@ async function initializeBot() {
         });
         
         // Language command
-        bot.command('lang', (ctx) => {
-            ctx.reply('🌍 Pilih bahasa:\n\n' +
-                     '🇮🇩 Indonesia\n' +
-                     '🇺🇸 English\n' +
-                     '🇯🇵 Jawa\n\n' +
-                     'Ketik: /lang id, /lang en, atau /lang jw');
+        bot.command('lang', async (ctx) => {
+            try {
+                await menu.showLanguageMenu(ctx);
+            } catch (error) {
+                console.error('Error in lang command:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
         });
         
         // Join command
-        bot.command('join', (ctx) => {
-            ctx.reply('🏠 Pilih kategori room:\n\n' +
-                     '🎮 Gaming\n' +
-                     '💬 General\n' +
-                     '📚 Education\n' +
-                     '🎵 Music\n' +
-                     '🎬 Entertainment\n' +
-                     '💻 Technology\n' +
-                     '🏃 Sports\n' +
-                     '🍔 Food\n' +
-                     '✈️ Travel\n\n' +
-                     'Ketik: /join gaming, /join general, dll');
+        bot.command('join', async (ctx) => {
+            try {
+                await menu.showJoinMenu(ctx);
+            } catch (error) {
+                console.error('Error in join command:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
         });
         
         // Rooms command
-        bot.command('rooms', (ctx) => {
-            ctx.reply('🏠 Daftar Room Tersedia:\n\n' +
-                     '🎮 Gaming (3 rooms)\n' +
-                     '💬 General (3 rooms)\n' +
-                     '📚 Education (3 rooms)\n' +
-                     '🎵 Music (3 rooms)\n' +
-                     '🎬 Entertainment (3 rooms)\n' +
-                     '💻 Technology (3 rooms)\n' +
-                     '🏃 Sports (3 rooms)\n' +
-                     '🍔 Food (3 rooms)\n' +
-                     '✈️ Travel (3 rooms)\n\n' +
-                     'Total: 24 rooms aktif');
+        bot.command('rooms', async (ctx) => {
+            try {
+                await menu.showRoomsMenu(ctx);
+            } catch (error) {
+                console.error('Error in rooms command:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
         });
         
         // VIP command
-        bot.command('vip', (ctx) => {
-            ctx.reply('💎 Fitur VIP AnonTalk Bot:\n\n' +
-                     '✨ Keunggulan VIP:\n' +
-                     '• Buat room pribadi\n' +
-                     '• Prioritas masuk room\n' +
-                     '• Avatar custom\n' +
-                     '• Emoji unlimited\n\n' +
-                     '💰 Harga:\n' +
-                     '• Harian: Rp 5.000\n' +
-                     '• Mingguan: Rp 25.000\n' +
-                     '• Bulanan: Rp 75.000\n\n' +
-                     'Untuk info lebih lanjut, hubungi admin.');
+        bot.command('vip', async (ctx) => {
+            try {
+                await menu.showVipMenu(ctx);
+            } catch (error) {
+                console.error('Error in vip command:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
         });
         
         // Test command
@@ -466,16 +224,23 @@ async function initializeBot() {
                      '🌐 Server: Firebase App Hosting');
         });
         
-        // Handle all messages
-        bot.on('message', (ctx) => {
+        // Handle all messages with smart menu
+        bot.on('message', async (ctx) => {
             const message = ctx.message.text;
             console.log('📨 Received message:', message);
             
-            // Simple message handling
+            // Skip if it's a command
             if (message && !message.startsWith('/')) {
-                ctx.reply('💬 Pesan Anda: ' + message + '\n\n' +
-                         '🔗 Anda sekarang bisa chat dengan user lain di room!\n' +
-                         'Gunakan /join untuk masuk room.');
+                try {
+                    // Use smart menu handler for non-command messages
+                    await autoMenu.smartMenuHandler(ctx);
+                } catch (error) {
+                    console.error('Error in smart menu:', error);
+                    // Fallback to simple reply
+                    ctx.reply('💬 Pesan Anda: ' + message + '\n\n' +
+                             '🔗 Anda sekarang bisa chat dengan user lain di room!\n' +
+                             'Gunakan /menu untuk melihat menu lengkap.');
+                }
             }
         });
         

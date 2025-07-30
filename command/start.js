@@ -1,33 +1,12 @@
 const db = require('../db'); // Firebase DB instance
-const lang = require('../lang');
+const menu = require('./menu');
 
 module.exports = async (ctx) => {
     try {
         console.log('📨 Received /start command from:', ctx.from.id);
         
-        // Create main menu keyboard
-        const menuKeyboard = {
-            inline_keyboard: [
-                [
-                    { text: '🏠 Join Room', callback_data: 'menu_join' },
-                    { text: '🌍 Language', callback_data: 'menu_lang' }
-                ],
-                [
-                    { text: '💎 VIP Info', callback_data: 'menu_vip' },
-                    { text: '📋 Help', callback_data: 'menu_help' }
-                ],
-                [
-                    { text: '🏆 Rooms List', callback_data: 'menu_rooms' },
-                    { text: '⚙️ Settings', callback_data: 'menu_settings' }
-                ]
-            ]
-        };
-        
-        // Send welcome message with menu
-        await ctx.reply('🎉 Selamat datang di AnonTalk Bot!\n\n' +
-                       '🤖 Bot untuk chat anonymous dengan user lain\n\n' +
-                       '📱 Pilih menu di bawah ini:',
-                       { reply_markup: menuKeyboard });
+        // Show main menu using the new menu system
+        await menu.showMainMenu(ctx);
 
         // Optional: Check user registration (simplified)
         try {
@@ -46,6 +25,6 @@ module.exports = async (ctx) => {
         
     } catch (err) {
         console.error('Error in start command:', err);
-        ctx.reply('An error occurred. Please try again.');
+        ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
     }
 };
