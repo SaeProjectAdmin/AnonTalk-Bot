@@ -5,10 +5,18 @@ const { getDatabase } = require('firebase/database');
 const cfg = require('./config');
 
 // Initialize Firebase Admin SDK
-admin.initializeApp({
-    credential: admin.credential.cert(cfg.FIREBASE_CREDENTIALS),
-    databaseURL: cfg.DB_URL
-});
+let adminApp;
+if (cfg.FIREBASE_CREDENTIALS) {
+    adminApp = admin.initializeApp({
+        credential: admin.credential.cert(cfg.FIREBASE_CREDENTIALS),
+        databaseURL: cfg.DB_URL
+    });
+} else {
+    // Use default credentials (for Firebase App Hosting)
+    adminApp = admin.initializeApp({
+        databaseURL: cfg.DB_URL
+    });
+}
 
 // Initialize Firebase Client SDK
 const app = initializeApp({

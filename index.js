@@ -93,9 +93,9 @@ async function initializeBot() {
         const { Telegraf } = require('telegraf');
         console.log('✅ Telegraf loaded');
         
-        // Get token from environment variables only
-        const token = process.env.BOT_TOKEN || '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
-        console.log('🔑 Bot token:', token ? 'Set' : 'Not set');
+        // Use hardcoded token for now since environment variables not working in App Hosting
+        const token = '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
+        console.log('🔑 Bot token: Using hardcoded token');
         
         if (!token || token === "your_telegram_bot_token_here") {
             console.error("❌ BOT_TOKEN is not set. Please set your Telegram bot token in the .env file.");
