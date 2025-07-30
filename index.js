@@ -52,8 +52,21 @@ app.get('/status', (req, res) => {
 });
 
 // Initialize database and start bot
-db.init(() => {
+try {
+    db.init(() => {
     console.log('🗄️ Database initialized successfully');
+    
+    // Start server immediately for health checks
+    const server = app.listen(port, () => {
+        console.log(`🌐 AnonTalk Bot server running on port ${port}`);
+        console.log(`📊 Status endpoint: /status`);
+    });
+    
+    // Handle server errors
+    server.on('error', (error) => {
+        console.error('❌ Server error:', error);
+        process.exit(1);
+    });
     
     // Bot middleware
     bot.use(async (ctx, next) => {
@@ -177,40 +190,37 @@ db.init(() => {
         // Use webhook callback
         app.use(bot.webhookCallback(secretPath));
         
-        // Start server
-        app.listen(port, () => {
-            console.log(`🌐 AnonTalk Bot server running on port ${port}`);
-            console.log(`🤖 Bot webhook endpoint: ${secretPath}`);
-            console.log(`📊 Status endpoint: /status`);
-        });
+        console.log(`🤖 Bot webhook endpoint: ${secretPath}`);
     } else {
         // Development: Use polling
         console.log('🔧 Starting bot in development mode with polling...');
         bot.launch();
-        
-        // Start server for development
-        app.listen(port, () => {
-            console.log(`🌐 AnonTalk Bot development server running on port ${port}`);
-            console.log(`📊 Status endpoint: /status`);
-        });
     }
     
-    console.log(`🎉 AnonTalk Bot v2.0.0 is ready!`);
-    console.log(`📋 Features: 24 rooms, 9 categories, 3 languages, VIP system`);
-    
-    // Graceful shutdown
-    process.once('SIGINT', () => {
-        console.log('🛑 Shutting down bot...');
-        bot.stop('SIGINT');
-        db.close();
+        console.log(`🎉 AnonTalk Bot v2.0.0 is ready!`);
+        console.log(`📋 Features: 24 rooms, 9 categories, 3 languages, VIP system`);
+        
+        // Graceful shutdown
+        process.once('SIGINT', () => {
+            console.log('🛑 Shutting down bot...');
+            bot.stop('SIGINT');
+            db.close();
+        });
+        
+        process.once('SIGTERM', () => {
+            console.log('🛑 Shutting down bot...');
+            bot.stop('SIGTERM');
+            db.close();
+        });
     });
-    
-    process.once('SIGTERM', () => {
-        console.log('🛑 Shutting down bot...');
-        bot.stop('SIGTERM');
-        db.close();
+} catch (error) {
+    console.error('❌ Failed to initialize database:', error);
+    // Still start the server for health checks
+    const server = app.listen(port, () => {
+        console.log(`🌐 AnonTalk Bot server running on port ${port} (database error)`);
+        console.log(`📊 Status endpoint: /status`);
     });
-});
+}
 
 // Error handling for uncaught exceptions
 process.on('uncaughtException', (error) => {
