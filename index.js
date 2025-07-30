@@ -40,6 +40,8 @@ db.init(() => {
     bot.command('list', (ctx) => commands.list(ctx));
     bot.command('donate', (ctx) => commands.donate(ctx));
     bot.command('help', (ctx) => commands.help(ctx));
+    bot.command('vip', (ctx) => commands.vip(ctx));
+    bot.command('create-room', (ctx) => commands.createRoom(ctx));
     bot.on('message', (ctx) => userSession(ctx));
 
     // Bot webhook setup

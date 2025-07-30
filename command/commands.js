@@ -4,7 +4,9 @@ const settings = require('./settings'),
     roomExit = require('./exit'),
     roomJoin = require('./join'),
     misc_ = require('./misc'),
-    help = require('./help')
+    help = require('./help'),
+    vip = require('./vip'),
+    createRoom = require('./create-room')
 
 module.exports = {
     settings,
@@ -15,5 +17,7 @@ module.exports = {
     rooms: misc_.rooms,
     list: misc_.list,
     donate: misc_.donate,
-    help
+    help,
+    vip,
+    createRoom
 }

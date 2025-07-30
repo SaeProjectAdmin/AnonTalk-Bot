@@ -3,17 +3,28 @@ const db = require('../db'); // Firebase DB instance
 const lang = require('../lang');
 
 module.exports = async (ctx, user) => {
-    try {
-        const dbuser = db.collection('users');
+    const dbuser = db.collection('users');
+    const userava = user.ava || '👤';
 
-        if (ctx.message.text.length <= 2) {
+    try {
+        // Check if user is VIP
+        const isVIP = user.vip || false;
+        const maxLength = isVIP ? 100 : 2; // 100 characters for VIP, 2 for regular users
+
+        if (ctx.message.text.length <= maxLength) {
             // Update user's avatar and reset the session
             await dbuser.child(ctx.chat.id).update({ ava: ctx.message.text, session: '' });
 
             // Send confirmation message to the user
+            let confirmMessage = lang(user.lang, ctx.message.text).change_ava;
+            
+            if (isVIP) {
+                confirmMessage += '\n\n💎 VIP Avatar: Avatar tanpa batas karakter aktif!';
+            }
+
             await ctx.telegram.sendMessage(
                 ctx.chat.id,
-                lang(user.lang, ctx.message.text).change_ava,
+                confirmMessage,
                 Markup.removeKeyboard()
             ).catch(() => false);
 
@@ -60,9 +71,15 @@ module.exports = async (ctx, user) => {
 
         } else {
             // Send error message for invalid avatar input
+            let errorMessage = lang(user.lang, ctx.message.text).invalid_ava;
+            
+            if (isVIP) {
+                errorMessage = `❌ Avatar terlalu panjang! Maksimal ${maxLength} karakter untuk VIP.`;
+            }
+
             await ctx.telegram.sendMessage(
                 ctx.chat.id,
-                lang(user.lang, ctx.message.text).invalid_ava,
+                errorMessage,
                 Markup.removeKeyboard()
             ).catch(() => false);
         }

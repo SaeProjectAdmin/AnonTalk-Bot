@@ -66,10 +66,19 @@ const setAva = async (ctx) => {
             return ctx.telegram.sendMessage(ctx.chat.id, "User not found.");
         }
 
+        // Check if user is VIP
+        const isVIP = user.vip || false;
+        
+        let avatarMessage = lang(user.lang, user.ava).current_ava;
+        
+        if (isVIP) {
+            avatarMessage += '\n\n💎 VIP Avatar: Anda dapat menggunakan avatar tanpa batas karakter!';
+        }
+
         // Send the current avatar message
         await ctx.telegram.sendMessage(
             ctx.chat.id,
-            lang(user.lang, user.ava).current_ava
+            avatarMessage
         ).catch((err) => false);
 
     } catch (err) {
