@@ -48,6 +48,16 @@ app.get('/test', (req, res) => {
     });
 });
 
+// Debug endpoint to check environment
+app.get('/debug', (req, res) => {
+    res.status(200).json({
+        botToken: process.env.BOT_TOKEN ? 'Set' : 'Not set',
+        nodeEnv: process.env.NODE_ENV || 'development',
+        port: port,
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Start server immediately for Cloud Run readiness
 console.log(`🚀 Starting server on port ${port}...`);
 const server = app.listen(port, '0.0.0.0', () => {
@@ -55,6 +65,7 @@ const server = app.listen(port, '0.0.0.0', () => {
     console.log(`📊 Health check: /`);
     console.log(`📈 Status: /status`);
     console.log(`🧪 Test: /test`);
+    console.log(`🐛 Debug: /debug`);
     
     // Initialize bot after server is ready
     setTimeout(() => {
@@ -75,9 +86,12 @@ async function initializeBot() {
         
         // Load environment variables
         require('dotenv').config();
+        console.log('📄 Environment variables loaded');
         
         // Load bot dependencies
+        console.log('📦 Loading Telegraf...');
         const { Telegraf } = require('telegraf');
+        console.log('✅ Telegraf loaded');
         
         const token = process.env.BOT_TOKEN;
         console.log('🔑 Bot token:', token ? 'Set' : 'Not set');
@@ -88,6 +102,7 @@ async function initializeBot() {
             return;
         }
         
+        console.log('🤖 Creating bot instance...');
         const bot = new Telegraf(token);
         const secretPath = '/' + token;
         
@@ -125,21 +140,26 @@ async function initializeBot() {
             }
         });
         
+        console.log('🔧 Setting up webhook...');
+        
         // Attach webhook handler
         if (process.env.NODE_ENV === 'production') {
+            console.log('🌐 Production mode - using webhook');
             app.use(bot.webhookCallback(secretPath));
             console.log(`🤖 Webhook endpoint ready at ${secretPath}`);
             
             // Set webhook
             const webhookUrl = process.env.WEBHOOK_URL || `https://anontalk-app--anontalk-bot-5f3f1.asia-east1.hosted.app${secretPath}`;
+            console.log('🔗 Setting webhook to:', webhookUrl);
+            
             try {
                 await bot.telegram.setWebhook(webhookUrl);
-                console.log(`✅ Webhook set to: ${webhookUrl}`);
+                console.log(`✅ Webhook set successfully`);
             } catch (error) {
                 console.error('❌ Error setting webhook:', error);
             }
         } else {
-            console.log('🔧 Starting bot in development mode with polling...');
+            console.log('🔧 Development mode - using polling');
             bot.launch();
         }
         
