@@ -160,7 +160,7 @@ async function handleCustomAvatarInput(ctx, message) {
         }
         
         // Update user's avatar
-        await db.collection('users').child(ctx.chat.id).update({ 
+        await db.collection('users').child(user.userid).update({ 
             ava: message,
             session: '' // Clear session
         });

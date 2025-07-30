@@ -8,11 +8,9 @@ module.exports = async (ctx) => {
         // Show main menu using the new menu system
         await menu.showMainMenu(ctx);
 
-        // Optional: Check user registration (simplified)
+        // Check user registration
         try {
-            const dbuser = db.collection('users');
-            const userSnapshot = await dbuser.doc(ctx.chat.id.toString()).get();
-            const user = userSnapshot.data();
+            const user = await db.getUserByChatId(ctx.chat.id);
 
             if (user && user.lang && user.lang !== '') {
                 console.log(`User ${ctx.chat.id} is registered with language: ${user.lang}`);

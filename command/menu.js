@@ -252,20 +252,23 @@ const handleMenu = async (ctx, menuType) => {
 // Auto-register user with Indonesian as default language
 const autoRegisterUser = async (ctx) => {
     try {
-        const dbuser = db.collection('users');
-        const userDoc = await dbuser.doc(ctx.chat.id.toString()).get();
+        // Check if user already exists
+        const existingUser = await db.getUserByChatId(ctx.chat.id);
         
         // If user doesn't exist, register them with Indonesian as default
-        if (!userDoc.exists) {
-            await dbuser.doc(ctx.chat.id.toString()).set({
+        if (!existingUser) {
+            const newUser = {
                 userid: ctx.chat.id,
                 username: ctx.from.username || '',
                 first_name: ctx.from.first_name || '',
                 last_name: ctx.from.last_name || '',
                 lang: 'Indonesia', // Default to Indonesian
+                ava: '👤', // Default avatar
                 registered_at: new Date().toISOString(),
                 last_activity: new Date().toISOString()
-            });
+            };
+            
+            await db.collection('users').push(newUser);
             console.log(`✅ Auto-registered user ${ctx.chat.id} with Indonesian language`);
         }
     } catch (error) {
