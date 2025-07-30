@@ -192,6 +192,16 @@ async function initializeBot() {
         require('dotenv').config();
         console.log('📄 Environment variables loaded');
         
+        // Initialize database and create rooms
+        console.log('🗄️ Initializing database...');
+        const db = require('./db');
+        await new Promise((resolve) => {
+            db.init(() => {
+                console.log('✅ Database initialized successfully');
+                resolve();
+            });
+        });
+        
         // Load bot dependencies
         console.log('📦 Loading dependencies...');
         const { Telegraf } = require('telegraf');
