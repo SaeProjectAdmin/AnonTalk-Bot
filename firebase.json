@@ -1,6 +1,7 @@
 {
   "apphosting": {
     "source": ".",
+    "rootDir": ".",
     "backendId": "anontalk-app",
     "ignore": [
       "firebase.json",
