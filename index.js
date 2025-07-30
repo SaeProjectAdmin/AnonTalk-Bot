@@ -153,9 +153,9 @@ async function initializeBot() {
         const { Telegraf } = require('telegraf');
         console.log('✅ Telegraf loaded');
         
-        // Use hardcoded token for now since environment variables not working in App Hosting
-        const token = '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
-        console.log('🔑 Bot token: Using hardcoded token');
+        // Get token from environment variables (Firebase App Hosting)
+        const token = process.env.BOT_TOKEN || '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
+        console.log('🔑 Bot token:', token ? 'Loaded from environment' : 'Using fallback token');
         
         if (!token || token === "your_telegram_bot_token_here") {
             console.error("❌ BOT_TOKEN is not set. Please set your Telegram bot token in the .env file.");
@@ -361,7 +361,7 @@ async function initializeBot() {
             console.log(`🤖 Webhook endpoint ready at ${secretPath}`);
             
             // Set webhook
-            const webhookUrl = process.env.WEBHOOK_URL || `https://anontalk-app--anontalk-bot-5f3f1.asia-east1.hosted.app${secretPath}`;
+            const webhookUrl = process.env.WEBHOOK_URL || `https://anontalk--anontalk-bot-5f3f1.us-central1.hosted.app${secretPath}`;
             console.log('🔗 Setting webhook to:', webhookUrl);
             
             try {

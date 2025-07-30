@@ -2,7 +2,7 @@
   "apphosting": {
     "source": ".",
     "rootDir": ".",
-    "backendId": "anontalk-app",
+    "backendId": "anontalk",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -15,7 +15,9 @@
       "**/vercel.json",
       "**/app.yaml",
       "**/.git/**",
-      "**/deploy.bat"
+      "**/deploy.bat",
+      "**/.gcloudignore",
+      "**/serviceAccount.json"
     ],
     "alwaysDeployFromSource": true
   },

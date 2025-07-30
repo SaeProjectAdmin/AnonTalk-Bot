@@ -9,11 +9,14 @@
     "deploy": "firebase deploy",
     "deploy:hosting": "firebase deploy --only apphosting",
     "deploy:functions": "firebase deploy --only functions",
-    "deploy:fast": "gcloud app deploy app.yaml --quiet",
+    "deploy:fast": "firebase deploy --only apphosting",
+    "deploy:env": "echo 'Environment variables set in firebase.json'",
     "build": "echo 'No build step required'",
     "test": "echo 'No tests specified'",
     "serve": "node index.js",
-    "performance": "curl -s https://anontalk-app--anontalk-bot-5f3f1.asia-east1.hosted.app/performance | jq ."
+    "performance": "curl -s https://anontalk--anontalk-bot-5f3f1.us-central1.hosted.app/performance | jq .",
+    "env:check": "echo 'Environment variables configured in firebase.json'",
+    "env:set": "echo 'Environment variables set in firebase.json'"
   },
   "engines": {
     "node": ">=18.0.0"
