@@ -202,6 +202,17 @@ async function initializeBot() {
             });
         });
         
+        // Start auto kick scheduler (check every hour)
+        setInterval(async () => {
+            try {
+                await db.autoKickInactiveUsers();
+            } catch (error) {
+                console.error('Error in auto kick scheduler:', error);
+            }
+        }, 60 * 60 * 1000); // 1 hour
+        
+        console.log('⏰ Auto kick scheduler started (check every hour)');
+        
         // Load bot dependencies
         console.log('📦 Loading dependencies...');
         const { Telegraf } = require('telegraf');
@@ -396,10 +407,19 @@ async function initializeBot() {
 • /unban <user_id> - Unban user
 • /reset_warn <user_id> - Reset user warnings
 
+**VIP Management:**
+• /setvip <user_id> <true/false> - Set VIP status
+• /checkvip <user_id> - Check VIP status
+• /listvip - List all VIP users
+• /removevip <user_id> - Remove VIP status
+• /adminhelp - Admin help
+
 **Example:**
 /warn 123456789
 /ban 123456789 Spam content
-/unban 123456789`;
+/unban 123456789
+/setvip 123456789 true
+/checkvip 123456789`;
 
                 await ctx.reply(adminText, { parse_mode: 'Markdown' });
             } catch (error) {
@@ -491,7 +511,66 @@ async function initializeBot() {
             }
         });
         
+        // Set VIP status
+        bot.command('setvip', async (ctx) => {
+            try {
+                const vip = require('./command/vip');
+                const args = ctx.message.text.split(' ');
+                if (args.length < 3) {
+                    return ctx.reply('❌ Usage: /setvip <user_id> <true/false>');
+                }
+                const targetUserId = args[1];
+                const isVIP = args[2].toLowerCase() === 'true';
+                await vip.setVIPStatus(ctx, targetUserId, isVIP);
+            } catch (error) {
+                console.error('Error in setvip command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
 
+        // Check VIP status
+        bot.command('checkvip', async (ctx) => {
+            try {
+                const adminCommands = require('./command/admin-commands');
+                await adminCommands.checkVIP(ctx);
+            } catch (error) {
+                console.error('Error in checkvip command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // List all VIP users
+        bot.command('listvip', async (ctx) => {
+            try {
+                const adminCommands = require('./command/admin-commands');
+                await adminCommands.listVIP(ctx);
+            } catch (error) {
+                console.error('Error in listvip command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // Remove VIP status
+        bot.command('removevip', async (ctx) => {
+            try {
+                const adminCommands = require('./command/admin-commands');
+                await adminCommands.removeVIP(ctx);
+            } catch (error) {
+                console.error('Error in removevip command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // Admin help
+        bot.command('adminhelp', async (ctx) => {
+            try {
+                const adminCommands = require('./command/admin-commands');
+                await adminCommands.adminHelp(ctx);
+            } catch (error) {
+                console.error('Error in adminhelp command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
         
         // Test command
         bot.command('test', (ctx) => {

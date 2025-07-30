@@ -153,28 +153,18 @@ async function isUserVIP(chatId) {
     try {
         const snapshot = await adminDb.ref('vip_users').child(chatId).once('value');
         const vipData = snapshot.val();
-        if (vipData && vipData.isVIP) {
-            // Check if VIP is still valid
-            if (vipData.expiresAt && vipData.expiresAt < Date.now()) {
-                // VIP expired, remove it
-                await adminDb.ref('vip_users').child(chatId).remove();
-                return false;
-            }
-            return true;
-        }
-        return false;
+        return vipData && vipData.isVIP === true;
     } catch (error) {
         console.error('Error checking VIP status:', error);
         return false;
     }
 }
 
-async function setUserVIP(chatId, expiresAt = null) {
+async function setUserVIP(chatId, isVIP = true) {
     try {
         await adminDb.ref('vip_users').child(chatId).set({
-            isVIP: true,
-            activatedAt: Date.now(),
-            expiresAt: expiresAt // null for permanent VIP
+            isVIP: isVIP,
+            updatedAt: Date.now()
         });
         return true;
     } catch (error) {
@@ -218,6 +208,55 @@ async function updateRoomMemberCount(roomId, increment = 1) {
     } catch (error) {
         console.error('Error updating room member count:', error);
         return 0;
+    }
+}
+
+// Update user's last activity and current room
+async function updateUserActivity(chatId, roomId = null) {
+    try {
+        const user = await getUserByChatId(chatId);
+        if (user) {
+            const updates = {
+                lastActivity: Date.now()
+            };
+            
+            if (roomId) {
+                updates.currentRoom = roomId;
+            }
+            
+            await adminDb.ref('users').child(user.userid).update(updates);
+        }
+    } catch (error) {
+        console.error('Error updating user activity:', error);
+    }
+}
+
+// Auto kick inactive users (7 hours = 25200000 ms)
+async function autoKickInactiveUsers() {
+    try {
+        const inactiveThreshold = Date.now() - (7 * 60 * 60 * 1000); // 7 hours
+        
+        const usersSnapshot = await adminDb.ref('users').once('value');
+        const users = usersSnapshot.val();
+        
+        if (!users) return;
+        
+        for (const [userId, userData] of Object.entries(users)) {
+            if (userData.currentRoom && userData.lastActivity && userData.lastActivity < inactiveThreshold) {
+                // Kick user from room
+                await adminDb.ref('users').child(userId).update({
+                    currentRoom: null,
+                    room: null
+                });
+                
+                // Decrease room member count
+                await updateRoomMemberCount(userData.currentRoom, -1);
+                
+                console.log(`🔄 Auto-kicked inactive user ${userData.userid} from room ${userData.currentRoom}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error in auto kick inactive users:', error);
     }
 }
 
@@ -410,6 +449,8 @@ module.exports = {
     getRoomsByLanguage,
     getSimpleRoomNames,
     updateRoomMemberCount,
+    updateUserActivity,
+    autoKickInactiveUsers,
     createCustomRoom,
     getBotStatistics,
     getUserStatistics,

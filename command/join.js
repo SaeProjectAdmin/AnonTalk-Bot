@@ -56,8 +56,12 @@ const joinRandomRoom = async (ctx, user) => {
 
 const joinRoom = async (ctx, user, room) => {
     try {
-        // Update user's room
-        await db.collection('users').child(user.userid).update({ room: room.room });
+        // Update user's room and activity
+        await db.collection('users').child(user.userid).update({ 
+            room: room.room,
+            currentRoom: room.room,
+            lastActivity: Date.now()
+        });
         
         // Update room member count
         await db.updateRoomMemberCount(room.room, 1);

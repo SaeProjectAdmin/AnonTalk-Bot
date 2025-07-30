@@ -129,6 +129,31 @@ module.exports.createVIPRoom = async (ctx, roomName) => {
     }
 };
 
+// Set VIP status (admin only)
+module.exports.setVIPStatus = async (ctx, targetUserId, isVIP) => {
+    try {
+        // Check if user is admin (you can modify this logic)
+        const isAdmin = ctx.from.id === 6265283380; // Replace with your admin ID
+        
+        if (!isAdmin) {
+            return ctx.reply('❌ Anda tidak memiliki akses admin.');
+        }
+        
+        const success = await db.setUserVIP(targetUserId, isVIP);
+        
+        if (success) {
+            const status = isVIP ? 'VIP' : 'Regular';
+            await ctx.reply(`✅ User ${targetUserId} berhasil di-set sebagai ${status}`);
+        } else {
+            await ctx.reply('❌ Gagal mengubah status VIP user.');
+        }
+        
+    } catch (error) {
+        console.error("Error setting VIP status:", error);
+        await ctx.reply("An error occurred while setting VIP status.");
+    }
+};
+
 // Handle VIP statistics
 module.exports.showVIPStats = async (ctx) => {
     try {

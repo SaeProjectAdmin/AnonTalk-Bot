@@ -27,7 +27,8 @@ module.exports = async (ctx) => {
                 await ctx.telegram.sendMessage(ctx.chat.id, "Please select a language using the buttons above.");
             }
         } else if (user.room !== '') {
-            // User is in a room, handle media messages
+            // User is in a room, update activity and handle media messages
+            await db.updateUserActivity(ctx.chat.id, user.room);
             await mediaHandler.handleMedia(ctx, user);
         } else {
             // User is not in a room, show invalid command message
