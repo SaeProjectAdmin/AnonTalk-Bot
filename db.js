@@ -61,9 +61,23 @@ const ROOM_CATEGORIES = {
 const SUPPORTED_LANGUAGES = ['Indonesia', 'English', 'Jawa'];
 
 function init(callback) {
+    console.log('🔗 Connecting to Firebase Realtime Database...');
+    console.log(`📡 Database URL: ${cfg.DB_URL}`);
+    
+    // Test database connection first
+    adminDb.ref('.info/connected').once('value', (snapshot) => {
+        const connected = snapshot.val();
+        if (connected) {
+            console.log('✅ Firebase Realtime Database connection successful');
+        } else {
+            console.log('⚠️ Firebase Realtime Database connection status unknown');
+        }
+    });
+
     // Initialize rooms with new structure
     adminDb.ref('rooms').once('value', (snapshot) => {
         if (!snapshot.exists()) {
+            console.log('🏠 Initializing default rooms...');
             const rooms = [];
             
             // Create 24 default rooms (8 per language)
@@ -88,32 +102,41 @@ function init(callback) {
             rooms.forEach(room => {
                 adminDb.ref('rooms').push(room);
             });
+            console.log(`✅ Created ${rooms.length} default rooms`);
+        } else {
+            console.log('✅ Rooms already initialized');
         }
     });
 
     // Initialize languages
     adminDb.ref('langs').once('value', (snapshot) => {
         if (!snapshot.exists()) {
+            console.log('🌐 Initializing supported languages...');
             const langs = SUPPORTED_LANGUAGES.map(lang => ({ lang: lang }));
 
             langs.forEach(lang => {
                 adminDb.ref('langs').push(lang);
             });
+            console.log(`✅ Initialized ${SUPPORTED_LANGUAGES.length} languages`);
+        } else {
+            console.log('✅ Languages already initialized');
         }
     });
-
-
 
     // Initialize room categories
     adminDb.ref('categories').once('value', (snapshot) => {
         if (!snapshot.exists()) {
+            console.log('📂 Initializing room categories...');
             Object.keys(ROOM_CATEGORIES).forEach(category => {
                 adminDb.ref('categories').child(category).set(ROOM_CATEGORIES[category]);
             });
+            console.log(`✅ Initialized ${Object.keys(ROOM_CATEGORIES).length} categories`);
+        } else {
+            console.log('✅ Categories already initialized');
         }
     });
 
-    console.log('Connected to Firebase Realtime Database.');
+    console.log('🎉 Firebase Realtime Database initialization complete');
     callback();
 }
 

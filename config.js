@@ -15,14 +15,14 @@ module.exports = {
         })(),
     
     // Database configuration
-    DB_URL: process.env.DB_URL || "https://anontalk-bot-5f3f1.firebaseio.com",
+    DB_URL: process.env.DB_URL || "https://anontalk-bot-5f3f1-default-rtdb.asia-southeast1.firebasedatabase.app",
     
     // Bot configuration
     BOT_TOKEN: process.env.BOT_TOKEN || "",
-    BOT_NAME: process.env.BOT_NAME || "AnonTalk Bot",
+    BOT_NAME: process.env.BOT_NAME || "AnonTalkBotV2",
     
     // Environment configuration
-    NODE_ENV: process.env.NODE_ENV || "development",
+    NODE_ENV: process.env.NODE_ENV || "production",
     PORT: process.env.PORT || 8080,
     
     // Webhook configuration
