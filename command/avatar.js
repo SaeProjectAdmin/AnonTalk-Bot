@@ -93,7 +93,7 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
 
         if (avatarType === 'custom') {
             // Set session to 'ava' for custom input
-            await db.collection('users').child(ctx.chat.id).update({ session: 'ava' });
+            await db.collection('users').child(user.userid).update({ session: 'ava' });
             
             const customMessage = {
                 'Indonesia': '✏️ **Input Avatar Custom**\n\nKirim emoji, huruf, atau angka (maksimal 2 karakter):',
@@ -114,7 +114,7 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
             
         } else if (avatarType === 'remove') {
             // Remove avatar and clear session
-            await db.collection('users').child(ctx.chat.id).update({ 
+            await db.collection('users').child(user.userid).update({ 
                 ava: '',
                 session: ''
             });
@@ -139,14 +139,14 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
             
         } else if (avatarType === 'back') {
             // Clear session and go back to avatar menu
-            await db.collection('users').child(ctx.chat.id).update({ session: '' });
+            await db.collection('users').child(user.userid).update({ session: '' });
             const avatarCommand = require('./avatar');
             await avatarCommand(ctx);
             ctx.answerCbQuery();
             
         } else {
             // Set selected avatar and clear session
-            await db.collection('users').child(ctx.chat.id).update({ 
+            await db.collection('users').child(user.userid).update({ 
                 ava: avatarType,
                 session: ''
             });

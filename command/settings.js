@@ -14,28 +14,34 @@ const setLang = async (ctx) => {
         }
 
         // Update user session to 'lang'
-        await db.collection('users').child(ctx.chat.id).update({ session: 'lang' });
+        await db.collection('users').child(user.userid).update({ session: 'lang' });
 
-        // Create inline keyboard for language selection
+        // Create inline keyboard for language selection with current selection indicator
         const keyboard = [
             [
                 {
-                    text: '🇮🇩 Indonesia',
+                    text: user.lang === 'Indonesia' ? '🇮🇩 Indonesia ✅' : '🇮🇩 Indonesia',
                     callback_data: 'lang_indonesia'
                 },
                 {
-                    text: '🇺🇸 English',
+                    text: user.lang === 'English' ? '🇺🇸 English ✅' : '🇺🇸 English',
                     callback_data: 'lang_english'
                 }
             ],
-
         ];
 
+        // Create message showing current language
+        const currentLangMessage = {
+            'Indonesia': `🌐 **Pilih Bahasa**\n\nBahasa saat ini: **${user.lang}**\n\nPilih bahasa yang ingin Anda gunakan:`,
+            'English': `🌐 **Select Language**\n\nCurrent language: **${user.lang}**\n\nChoose the language you want to use:`
+        };
+        
         // Send language selection message with inline keyboard
         await ctx.telegram.sendMessage(
             ctx.chat.id,
-            lang(user.lang, user.lang).select_language,
+            currentLangMessage[user.lang] || currentLangMessage['English'],
             {
+                parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: keyboard
                 }
@@ -70,14 +76,20 @@ const handleLanguageCallback = async (ctx, selectedLang) => {
         }
 
         // Update user's language
-        await db.collection('users').child(ctx.chat.id).update({ 
+        await db.collection('users').child(user.userid).update({ 
             lang: newLang,
             session: '' // Clear session
         });
 
-        // Send confirmation message
-        const confirmMessage = lang(newLang, newLang).language_changed;
-        await ctx.editMessageText(confirmMessage);
+        // Send confirmation message with updated language info
+        const confirmMessage = {
+            'Indonesia': `✅ **Bahasa berhasil diubah!**\n\nBahasa baru: **${newLang}**\n\nBot sekarang akan menggunakan bahasa ${newLang}.`,
+            'English': `✅ **Language changed successfully!**\n\nNew language: **${newLang}**\n\nThe bot will now use ${newLang} language.`
+        };
+        
+        await ctx.editMessageText(confirmMessage[newLang] || confirmMessage['English'], {
+            parse_mode: 'Markdown'
+        });
         
         ctx.answerCbQuery("Language updated successfully!");
 
@@ -97,7 +109,7 @@ const setAva = async (ctx) => {
         }
 
         // Update user session to 'ava'
-        await db.collection('users').child(ctx.chat.id).update({ session: 'ava' });
+        await db.collection('users').child(user.userid).update({ session: 'ava' });
 
         let avatarMessage = lang(user.lang, user.ava).current_ava;
 

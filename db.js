@@ -44,32 +44,10 @@ try {
     throw error; // Re-throw as this is critical for the bot to function
 }
 
-// Fun room names with icons (no categories)
-const FUN_ROOM_NAMES = [
-    { icon: '🤪', name: { 'Indonesia': 'Room Ghibah', 'English': 'Gossip Room' } },
-    { icon: '😴', name: { 'Indonesia': 'Room Tidur', 'English': 'Sleep Room' } },
-    { icon: '🍕', name: { 'Indonesia': 'Room Makan', 'English': 'Food Room' } },
-    { icon: '🎮', name: { 'Indonesia': 'Room Game', 'English': 'Gaming Room' } },
-    { icon: '🎵', name: { 'Indonesia': 'Room Musik', 'English': 'Music Room' } },
-    { icon: '💻', name: { 'Indonesia': 'Room Coding', 'English': 'Coding Room' } },
-    { icon: '🏃', name: { 'Indonesia': 'Room Olahraga', 'English': 'Sports Room' } },
-    { icon: '📚', name: { 'Indonesia': 'Room Belajar', 'English': 'Study Room' } },
-    { icon: '🎬', name: { 'Indonesia': 'Room Film', 'English': 'Movie Room' } },
-    { icon: '🛒', name: { 'Indonesia': 'Room Shopping', 'English': 'Shopping Room' } },
-    { icon: '✈️', name: { 'Indonesia': 'Room Travel', 'English': 'Travel Room' } },
-    { icon: '🐱', name: { 'Indonesia': 'Room Kucing', 'English': 'Cat Room' } },
-    { icon: '🐕', name: { 'Indonesia': 'Room Anjing', 'English': 'Dog Room' } },
-    { icon: '🌺', name: { 'Indonesia': 'Room Bunga', 'English': 'Flower Room' } },
-    { icon: '☕', name: { 'Indonesia': 'Room Kopi', 'English': 'Coffee Room' } },
-    { icon: '🍰', name: { 'Indonesia': 'Room Kue', 'English': 'Cake Room' } },
-    { icon: '🎨', name: { 'Indonesia': 'Room Seni', 'English': 'Art Room' } },
-    { icon: '📱', name: { 'Indonesia': 'Room Gadget', 'English': 'Gadget Room' } },
-    { icon: '💄', name: { 'Indonesia': 'Room Makeup', 'English': 'Makeup Room' } },
-    { icon: '🏠', name: { 'Indonesia': 'Room Rumah', 'English': 'Home Room' } },
-    { icon: '🚗', name: { 'Indonesia': 'Room Mobil', 'English': 'Car Room' } },
-    { icon: '🌙', name: { 'Indonesia': 'Room Malam', 'English': 'Night Room' } },
-    { icon: '☀️', name: { 'Indonesia': 'Room Pagi', 'English': 'Morning Room' } },
-    { icon: '🌈', name: { 'Indonesia': 'Room Pelangi', 'English': 'Rainbow Room' } }
+// Simple room names for 10 rooms
+const SIMPLE_ROOM_NAMES = [
+    'Room 1', 'Room 2', 'Room 3', 'Room 4', 'Room 5',
+    'Room 6', 'Room 7', 'Room 8', 'Room 9', 'Room 10'
 ];
 
 // Supported languages
@@ -95,9 +73,9 @@ function init(callback) {
             console.log('🏠 Initializing default rooms...');
             const rooms = [];
             
-            // Create 16 default rooms (8 per language)
+            // Create 10 simple rooms per language (Room 1, Room 2, etc.)
             SUPPORTED_LANGUAGES.forEach(lang => {
-                FUN_ROOM_NAMES.forEach(roomName => {
+                for (let i = 1; i <= 10; i++) {
                     const maxMembers = 20;
                     
                     rooms.push({
@@ -108,15 +86,15 @@ function init(callback) {
                         private: false,
                         vip: false,
                         createdAt: Date.now(),
-                        description: `${roomName.icon} ${roomName.name[lang]} - ${lang}`
+                        description: `Room ${i} - ${lang}`
                     });
-                });
+                }
             });
 
             rooms.forEach(room => {
                 adminDb.ref('rooms').push(room);
             });
-            console.log(`✅ Created ${rooms.length} default rooms`);
+            console.log(`✅ Created ${rooms.length} default rooms (10 per language)`);
         } else {
             console.log('✅ Rooms already initialized');
         }
@@ -137,18 +115,7 @@ function init(callback) {
         }
     });
 
-    // Initialize fun room names
-    adminDb.ref('room_names').once('value', (snapshot) => {
-        if (!snapshot.exists()) {
-            console.log('🏠 Initializing fun room names...');
-            FUN_ROOM_NAMES.forEach((roomName, index) => {
-                adminDb.ref('room_names').child(index.toString()).set(roomName);
-            });
-            console.log(`✅ Initialized ${FUN_ROOM_NAMES.length} fun room names`);
-        } else {
-            console.log('✅ Fun room names already initialized');
-        }
-    });
+
 
     console.log('🎉 Firebase Realtime Database initialization complete');
     callback();
@@ -227,14 +194,12 @@ async function getRoomsByLanguage(lang) {
     }
 }
 
-async function getFunRoomNames() {
+async function getSimpleRoomNames() {
     try {
-        const snapshot = await adminDb.ref('room_names').once('value');
-        const data = snapshot.val();
-        return data ? Object.values(data) : FUN_ROOM_NAMES;
+        return SIMPLE_ROOM_NAMES;
     } catch (error) {
-        console.error('Error getting fun room names:', error);
-        return FUN_ROOM_NAMES;
+        console.error('Error getting simple room names:', error);
+        return SIMPLE_ROOM_NAMES;
     }
 }
 
@@ -316,22 +281,22 @@ async function getBotStatistics() {
             // Count active rooms (rooms with members > 0)
             stats.activeRooms = Object.values(rooms).filter(room => room.member > 0).length;
             
-            // Calculate top categories
-            const categoryCounts = {};
+            // Calculate top rooms by member count
+            const roomCounts = {};
             Object.values(rooms).forEach(room => {
-                if (room.category) {
-                    categoryCounts[room.category] = (categoryCounts[room.category] || 0) + room.member;
+                if (room.description) {
+                    roomCounts[room.description] = (roomCounts[room.description] || 0) + room.member;
                 }
             });
             
-            // Sort categories by member count
-            stats.topCategories = Object.entries(categoryCounts)
+            // Sort rooms by member count
+            stats.topCategories = Object.entries(roomCounts)
                 .sort(([,a], [,b]) => b - a)
                 .slice(0, 5)
-                .map(([category, count]) => ({
-                    category,
+                .map(([roomName, count]) => ({
+                    category: roomName,
                     count,
-                    icon: ROOM_CATEGORIES[category]?.icon || '📁'
+                    icon: '🏠'
                 }));
         }
 
@@ -443,11 +408,11 @@ module.exports = {
     isUserVIP,
     setUserVIP,
     getRoomsByLanguage,
-    getFunRoomNames,
+    getSimpleRoomNames,
     updateRoomMemberCount,
     createCustomRoom,
     getBotStatistics,
     getUserStatistics,
-    FUN_ROOM_NAMES,
+    SIMPLE_ROOM_NAMES,
     SUPPORTED_LANGUAGES
 };

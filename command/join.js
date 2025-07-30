@@ -13,8 +13,8 @@ module.exports = async (ctx) => {
             return ctx.telegram.sendMessage(ctx.chat.id, "Please set your language first with /lang command.");
         }
 
-        // Show fun room selection
-        await showFunRooms(ctx, user);
+        // Direct join to random room
+        await joinRandomRoom(ctx, user);
         
     } catch (error) {
         console.error("Error in join command:", error);
@@ -22,139 +22,9 @@ module.exports = async (ctx) => {
     }
 };
 
-const showFunRooms = async (ctx, user) => {
+const joinRandomRoom = async (ctx, user) => {
     try {
         const isVIP = await db.isUserVIP(ctx.chat.id);
-        const funRoomNames = await db.getFunRoomNames();
-        
-        // Create inline keyboard for fun rooms
-        const keyboard = [];
-        let row = [];
-        
-        // Add "Join Random Room" button at the top
-        const randomButtonText = user.lang === 'Indonesia' ? '🎲 Join Room Acak' : '🎲 Join Random Room';
-        
-        keyboard.push([{
-            text: randomButtonText,
-            callback_data: 'join_random_room'
-        }]);
-        
-        // Add separator
-        keyboard.push([{
-            text: '🏠 Pilih Room / Choose Room',
-            callback_data: 'separator'
-        }]);
-        
-        // Get available rooms for user's language
-        const availableRooms = await db.getRoomsByLanguage(user.lang);
-        
-        // Create buttons for each fun room name
-        funRoomNames.forEach((roomName, index) => {
-            const roomNameText = roomName.name[user.lang] || roomName.name['English'];
-            const buttonText = `${roomName.icon} ${roomNameText}`;
-            
-            row.push({
-                text: buttonText,
-                callback_data: `join_fun_room_${index}`
-            });
-            
-            if (row.length === 2) {
-                keyboard.push(row);
-                row = [];
-            }
-        });
-        
-        if (row.length > 0) {
-            keyboard.push(row);
-        }
-        
-        const message = `🏠 **Pilih Room yang Lucu!**
-
-Pilih room yang ingin Anda masuki:
-
-${funRoomNames.map((roomName, index) => {
-    const roomNameText = roomName.name[user.lang] || roomName.name['English'];
-    return `${roomName.icon} **${roomNameText}**`;
-}).join('\n')}
-
-💡 **Tips:** Setiap room memiliki tema yang berbeda dan menyenangkan!`;
-        
-        await ctx.telegram.sendMessage(ctx.chat.id, message, {
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: keyboard
-            }
-        });
-        
-    } catch (error) {
-        console.error("Error showing fun rooms:", error);
-        ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
-    }
-};
-
-// Handle fun room selection callback
-module.exports.handleFunRoomCallback = async (ctx, roomIndex) => {
-    try {
-        const user = await db.getUserByChatId(ctx.chat.id);
-        const isVIP = await db.isUserVIP(ctx.chat.id);
-        
-        if (!user) {
-            return ctx.answerCbQuery("User not found. Please try /start again.");
-        }
-        
-        // Get fun room names
-        const funRoomNames = await db.getFunRoomNames();
-        const selectedRoomName = funRoomNames[roomIndex];
-        
-        if (!selectedRoomName) {
-            return ctx.answerCbQuery("Room not found.");
-        }
-        
-        // Get rooms for user's language
-        const rooms = await db.getRoomsByLanguage(user.lang);
-        
-        // Find rooms that match the selected room name
-        const matchingRooms = rooms.filter(room => {
-            const roomNameText = selectedRoomName.name[user.lang] || selectedRoomName.name['English'];
-            return room.description && room.description.includes(roomNameText);
-        });
-        
-        if (matchingRooms.length === 0) {
-            return ctx.answerCbQuery("No rooms available for this selection.");
-        }
-        
-        // Filter VIP rooms if user is not VIP
-        const availableRooms = matchingRooms.filter(room => {
-            if (room.vip && !isVIP) return false;
-            return room.member < room.maxMember;
-        });
-        
-        if (availableRooms.length === 0) {
-            const message = isVIP ? 
-                "All rooms of this type are full." : 
-                "This room type is VIP only. Upgrade to VIP to access.";
-            return ctx.answerCbQuery(message);
-        }
-        
-        // Join the first available room
-        const roomToJoin = availableRooms[0];
-        await joinRoom(ctx, user, roomToJoin);
-        
-    } catch (error) {
-        console.error("Error handling fun room callback:", error);
-        ctx.answerCbQuery("An error occurred. Please try again.");
-    }
-};
-
-// Handle random room callback
-module.exports.handleRandomRoomCallback = async (ctx) => {
-    try {
-        const user = await db.getUserByChatId(ctx.chat.id);
-        const isVIP = await db.isUserVIP(ctx.chat.id);
-        
-        if (!user) {
-            return ctx.answerCbQuery("User not found. Please try /start again.");
-        }
         
         // Get available rooms for user's language
         const rooms = await db.getRoomsByLanguage(user.lang);
@@ -166,7 +36,10 @@ module.exports.handleRandomRoomCallback = async (ctx) => {
         });
         
         if (availableRooms.length === 0) {
-            return ctx.answerCbQuery("No rooms available at the moment.");
+            const message = user.lang === 'Indonesia' ? 
+                "Tidak ada room yang tersedia saat ini. Silakan coba lagi nanti." :
+                "No rooms available at the moment. Please try again later.";
+            return ctx.telegram.sendMessage(ctx.chat.id, message);
         }
         
         // Select random room
@@ -176,8 +49,8 @@ module.exports.handleRandomRoomCallback = async (ctx) => {
         await joinRoom(ctx, user, randomRoom);
         
     } catch (error) {
-        console.error("Error handling random room callback:", error);
-        ctx.answerCbQuery("An error occurred. Please try again.");
+        console.error("Error joining random room:", error);
+        ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
     }
 };
 
