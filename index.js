@@ -1,14 +1,28 @@
+const { Telegraf } = require('telegraf');
+const userCheck = require('./middleware/userCheck');
+const db = require('./db');
+const cfg = require('./config');
 const express = require('express');
 const bodyParser = require('body-parser');
+const commands = require('./command/commands');
+const userSession = require('./session/sessions');
 
+const token = cfg.BOT_TOKEN;
+if (!token || token === "") {
+    console.error("❌ BOT_TOKEN is not set. Please set your Telegram bot token in the .env file.");
+    process.exit(1);
+}
+
+const bot = new Telegraf(token);
 const app = express();
 const port = process.env.PORT || 8080;
+const secretPath = '/' + token;
 
-// Middleware setup
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Health check endpoint for Firebase hosting
+// Health check
 app.get('/', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -18,7 +32,6 @@ app.get('/', (req, res) => {
     });
 });
 
-// Bot status endpoint
 app.get('/status', (req, res) => {
     res.status(200).json({
         bot: 'AnonTalk Bot',
@@ -35,33 +48,159 @@ app.get('/status', (req, res) => {
     });
 });
 
-// Test endpoint
-app.get('/test', (req, res) => {
-    res.status(200).json({
-        message: 'Test endpoint working',
-        env: process.env.NODE_ENV || 'development',
-        port: port
-    });
-});
+// Attach webhook handler early
+if (process.env.NODE_ENV === 'production') {
+    app.use(bot.webhookCallback(secretPath));
+    console.log(`🤖 Webhook endpoint ready at ${secretPath}`);
+}
 
-// Start server immediately
+// Start server ASAP for Cloud Run readiness
 const server = app.listen(port, () => {
-    console.log(`🌐 AnonTalk Bot server running on port ${port}`);
-    console.log(`📊 Status endpoint: /status`);
-    console.log(`🧪 Test endpoint: /test`);
+    console.log(`🌐 Server running on port ${port}`);
 });
 
-// Handle server errors
+// Handle server error
 server.on('error', (error) => {
     console.error('❌ Server error:', error);
     process.exit(1);
 });
 
-// Error handling for uncaught exceptions
+// Start DB and bot logic
+try {
+    db.init(() => {
+        console.log('🗄️ Database initialized successfully');
+
+        bot.use(async (ctx, next) => {
+            await userCheck(ctx, next);
+        });
+
+        // Bot commands
+        bot.start((ctx) => commands.start(ctx));
+        bot.command('avatar', (ctx) => commands.settings.setAva(ctx));
+        bot.command('lang', (ctx) => commands.settings.setLang(ctx));
+        bot.command('cancel', (ctx) => commands.cancel(ctx));
+        bot.command('join', (ctx) => commands.join(ctx));
+        bot.command('exit', (ctx) => commands.exit(ctx));
+        bot.command('rooms', (ctx) => commands.rooms(ctx));
+        bot.command('list', (ctx) => commands.list(ctx));
+        bot.command('donate', (ctx) => commands.donate(ctx));
+        bot.command('help', (ctx) => commands.help(ctx));
+        bot.command('vip', (ctx) => commands.vip(ctx));
+        bot.command('create-room', async (ctx) => {
+            try {
+                const args = ctx.message.text.split(' ');
+                const roomName = args.slice(1).join(' ');
+                if (!roomName) return ctx.reply('Usage: /create-room <room_name>');
+                const vipCommand = require('./command/vip');
+                await vipCommand.createVIPRoom(ctx, roomName);
+            } catch (error) {
+                console.error("Error in create-room command:", error);
+                ctx.reply("An error occurred. Please try again.");
+            }
+        });
+
+        // Callback handlers
+        bot.action(/join_category_(.+)/, async (ctx) => {
+            try {
+                const category = ctx.match[1];
+                const joinCommand = require('./command/join');
+                await joinCommand.handleCategoryCallback(ctx, category);
+            } catch (error) {
+                console.error("Error handling category callback:", error);
+                ctx.answerCbQuery("An error occurred. Please try again.");
+            }
+        });
+
+        bot.action(/join_room_(.+)/, async (ctx) => {
+            try {
+                const roomId = ctx.match[1];
+                const joinCommand = require('./command/join');
+                await joinCommand.handleRoomCallback(ctx, roomId);
+            } catch (error) {
+                console.error("Error handling room callback:", error);
+                ctx.answerCbQuery("An error occurred. Please try again.");
+            }
+        });
+
+        bot.action('join_categories', async (ctx) => {
+            try {
+                const joinCommand = require('./command/join');
+                await joinCommand.handleBackToCategories(ctx);
+            } catch (error) {
+                console.error("Error handling back to categories:", error);
+                ctx.answerCbQuery("An error occurred. Please try again.");
+            }
+        });
+
+        bot.action(/lang_(.+)/, async (ctx) => {
+            try {
+                const selectedLang = ctx.match[1];
+                const settings = require('./command/settings');
+                await settings.handleLanguageCallback(ctx, `lang_${selectedLang}`);
+            } catch (error) {
+                console.error("Error handling language callback:", error);
+                ctx.answerCbQuery("An error occurred. Please try again.");
+            }
+        });
+
+        bot.command('vip-stats', async (ctx) => {
+            try {
+                const vipCommand = require('./command/vip');
+                await vipCommand.showVIPStats(ctx);
+            } catch (error) {
+                console.error("Error in vip-stats command:", error);
+                ctx.reply("An error occurred. Please try again.");
+            }
+        });
+
+        // Session handler
+        bot.on('message', (ctx) => userSession(ctx));
+
+        // Bot error handling
+        bot.catch((err, ctx) => {
+            console.error(`Error for ${ctx.updateType}:`, err);
+            try {
+                ctx.reply('An error occurred. Please try again later.');
+            } catch (replyError) {
+                console.error('Error sending error message:', replyError);
+            }
+        });
+
+        // Launch bot
+        if (process.env.NODE_ENV === 'production') {
+            const webhookUrl = process.env.WEBHOOK_URL || `https://${process.env.FIREBASE_PROJECT_ID}.web.app${secretPath}`;
+            bot.telegram.setWebhook(webhookUrl).then(() => {
+                console.log(`✅ Webhook set to: ${webhookUrl}`);
+            }).catch((error) => {
+                console.error('❌ Error setting webhook:', error);
+            });
+        } else {
+            console.log('🔧 Starting bot in development mode with polling...');
+            bot.launch();
+        }
+
+        console.log(`🎉 AnonTalk Bot v2.0.0 is ready!`);
+    });
+} catch (error) {
+    console.error('❌ Failed to initialize database:', error);
+}
+
+// Graceful shutdown
+process.once('SIGINT', () => {
+    console.log('🛑 Shutting down bot...');
+    bot.stop('SIGINT');
+    db.close();
+});
+process.once('SIGTERM', () => {
+    console.log('🛑 Shutting down bot...');
+    bot.stop('SIGTERM');
+    db.close();
+});
+
+// Crash catchers
 process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught Exception:', error);
 });
-
 process.on('unhandledRejection', (reason, promise) => {
     console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
