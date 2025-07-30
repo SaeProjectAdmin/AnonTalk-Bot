@@ -1,6 +1,7 @@
 {
   "apphosting": {
     "source": ".",
+    "backendId": "anontalk-app",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -11,7 +12,9 @@
       "**/README_NEW.md",
       "**/deploy.sh",
       "**/vercel.json",
-      "**/app.yaml"
+      "**/app.yaml",
+      "**/.git/**",
+      "**/deploy.bat"
     ]
   },
   "functions": {
