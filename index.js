@@ -1,3 +1,6 @@
+// Load environment configuration first
+const envConfig = require('./config/env');
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -31,7 +34,6 @@ app.use((req, res, next) => {
         '/.env',
         '/serviceaccount.json',
         '/serviceaccount',
-        '/config.json',
         '/package.json',
         '/package-lock.json',
         '/node_modules/',
@@ -58,23 +60,23 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Health check endpoint for Firebase hosting
-app.get('/', cacheMiddleware(60), (req, res) => {
+app.get('/', cacheMiddleware(envConfig.CACHE_DURATION.HEALTH_CHECK), (req, res) => {
     res.status(200).json({
         status: 'OK',
         message: 'AnonTalk Bot is running',
-        version: '2.0.0',
+        version: envConfig.APP_VERSION,
         timestamp: new Date().toISOString(),
         port: port,
-        env: process.env.NODE_ENV || 'development'
+        env: envConfig.NODE_ENV
     });
 });
 
 // Bot status endpoint
-app.get('/status', cacheMiddleware(300), (req, res) => {
+app.get('/status', cacheMiddleware(envConfig.CACHE_DURATION.STATUS), (req, res) => {
     res.status(200).json({
-        bot: 'AnonTalk Bot',
+        bot: envConfig.APP_NAME,
         status: 'Active',
-        version: '2.0.0',
+        version: envConfig.APP_VERSION,
         features: [
             '16 Rooms across 8 categories',
             '2 Languages (Indonesia, English)',
@@ -88,10 +90,10 @@ app.get('/status', cacheMiddleware(300), (req, res) => {
 });
 
 // Test endpoint for debugging
-app.get('/test', cacheMiddleware(60), (req, res) => {
+app.get('/test', cacheMiddleware(envConfig.CACHE_DURATION.TEST), (req, res) => {
     res.status(200).json({
         message: 'Test endpoint working',
-        env: process.env.NODE_ENV || 'development',
+        env: envConfig.NODE_ENV,
         port: port,
         timestamp: new Date().toISOString()
     });
@@ -100,8 +102,8 @@ app.get('/test', cacheMiddleware(60), (req, res) => {
 // Debug endpoint to check environment
 app.get('/debug', (req, res) => {
     res.status(200).json({
-        botToken: process.env.BOT_TOKEN ? 'Set' : 'Not set',
-        nodeEnv: process.env.NODE_ENV || 'development',
+        botToken: envConfig.BOT_TOKEN ? 'Set' : 'Not set',
+        nodeEnv: envConfig.NODE_ENV,
         port: port,
         timestamp: new Date().toISOString()
     });
@@ -110,8 +112,8 @@ app.get('/debug', (req, res) => {
 // Performance monitoring endpoint
 app.get('/performance', (req, res) => {
     res.status(200).json({
-        server: 'AnonTalk Bot',
-        version: '2.0.0',
+        server: envConfig.APP_NAME,
+        version: envConfig.APP_VERSION,
         performance: performanceMonitor.getMetrics(),
         timestamp: new Date().toISOString()
     });
@@ -153,9 +155,9 @@ async function initializeBot() {
         const { Telegraf } = require('telegraf');
         console.log('✅ Telegraf loaded');
         
-        // Get token from environment variables (Firebase App Hosting)
-        const token = process.env.BOT_TOKEN || '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
-        console.log('🔑 Bot token:', token ? 'Loaded from environment' : 'Using fallback token');
+        // Get token from environment configuration
+        const token = envConfig.BOT_TOKEN;
+        console.log('🔑 Bot token: Loaded from config');
         
         if (!token || token === "your_telegram_bot_token_here") {
             console.error("❌ BOT_TOKEN is not set. Please set your Telegram bot token in the .env file.");
@@ -361,7 +363,7 @@ async function initializeBot() {
             console.log(`🤖 Webhook endpoint ready at ${secretPath}`);
             
             // Set webhook
-            const webhookUrl = process.env.WEBHOOK_URL || `https://anontalk--anontalk-bot-5f3f1.us-central1.hosted.app${secretPath}`;
+            const webhookUrl = envConfig.WEBHOOK_URL + secretPath;
             console.log('🔗 Setting webhook to:', webhookUrl);
             
             try {
