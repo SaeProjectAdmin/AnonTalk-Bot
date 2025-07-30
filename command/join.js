@@ -1,138 +1,288 @@
 const uniqueID = () => Date.now() + Math.floor(Math.random() * 100);
-const db = require('../db'); // Firebase DB instance
-const lang = require('../lang'); // Language module
-const roomExit = require('./exit'); // Room exit handler
-
-let max_member = 50 + Math.floor(Math.random() * 5);
-let max_join = 20;
-let dbuser, user, dbroom;
+const db = require('../db');
+const lang = require('../lang');
+const roomExit = require('./exit');
 
 module.exports = async (ctx) => {
-    dbuser = db.collection('users');
-
     try {
-        const userSnapshot = await dbuser.orderByChild('userid').equalTo(ctx.chat.id).once('value');
-        const userData = userSnapshot.val();
-
-        if (!userData) {
-            return ctx.telegram.sendMessage(ctx.chat.id, "User not found.");
+        const user = await db.getUserByChatId(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.telegram.sendMessage(ctx.chat.id, "User not found. Please try /start again.");
         }
 
-        const userIdKey = Object.keys(userData)[0];
-        user = userData[userIdKey];
+        if (!user.lang || user.lang === '') {
+            return ctx.telegram.sendMessage(ctx.chat.id, "Please set your language first with /lang command.");
+        }
 
+        // Check if user is in a room and exit first
         if (user.room !== '') {
-            roomExit(ctx, let_join); // Exit current room before joining a new one
+            await roomExit(ctx, () => showRoomCategories(ctx, user));
         } else {
-            let_join(ctx, user); // Directly join if not in a room
+            await showRoomCategories(ctx, user);
         }
     } catch (err) {
-        console.error("Error finding user:", err);
+        console.error("Error in join command:", err);
         ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
     }
 };
 
-const let_join = async (ctx, user) => {
-    let gotRoom = String(uniqueID());
-    let gotRoomInfo = {};
-    let foundRoom = false;
-    let sroom;
-    let dest_room = ctx.message.text.substr(6);
-    dbroom = db.collection('rooms');
-
-    if (dest_room === '') {
-        try {
-            const roomSnapshot = await dbroom.orderByChild('lang').equalTo(user.lang).once('value');
-            const roomData = roomSnapshot.val();
-
-            if (roomData) {
-                sroom = Object.values(roomData);
-                shuffle(sroom);
-                let roomCandidate = sroom[0];
-
-                if (roomCandidate.member <= max_member) {
-                    gotRoom = roomCandidate.room;
-                    gotRoomInfo = roomCandidate;
-                    foundRoom = true;
-                }
-
-                if (foundRoom) {
-                    await dbuser.child(user.userid).update({ room: gotRoom });
-                    await dbroom.child(gotRoom).update({ member: gotRoomInfo.member + 1 });
-
-                    const usersInRoomSnapshot = await dbuser.orderByChild('room').equalTo(gotRoom).once('value');
-                    const usersInRoomData = usersInRoomSnapshot.val();
-                    const usersInRoom = usersInRoomData ? Object.values(usersInRoomData).filter(v => v.userid !== user.userid) : [];
-
-                    usersInRoom.forEach(async v => {
-                        await ctx.telegram.sendMessage(
-                            v.userid,
-                            `${lang(v.lang, user.ava || 'Botak', ctx.message.text).other_join} ${lang(v.lang, gotRoomInfo.member + 1).people}`
-                        );
-                    });
-
-                    await ctx.telegram.sendMessage(
-                        ctx.chat.id,
-                        `${lang(user.lang).join} ${lang(user.lang, gotRoomInfo.member).other_people}`
-                    );
-                } else {
-                    await dbuser.child(user.userid).update({ room: gotRoom });
-                    await dbroom.child(gotRoom).set({ room: gotRoom, member: 1, lang: user.lang, private: false });
-
-                    await ctx.telegram.sendMessage(
-                        ctx.chat.id,
-                        `${lang(user.lang).join} ${lang(user.lang, 0).other_people}`
-                    );
-                }
+const showRoomCategories = async (ctx, user) => {
+    try {
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        const categories = Object.keys(db.ROOM_CATEGORIES);
+        
+        // Create inline keyboard for room categories
+        const keyboard = [];
+        let row = [];
+        
+        categories.forEach((category, index) => {
+            const categoryInfo = db.ROOM_CATEGORIES[category];
+            const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
+            const buttonText = `${categoryInfo.icon} ${categoryName}`;
+            
+            row.push({
+                text: buttonText,
+                callback_data: `join_category_${category}`
+            });
+            
+            if (row.length === 2) {
+                keyboard.push(row);
+                row = [];
             }
-        } catch (err) {
-            console.error("Error finding or creating room:", err);
-            ctx.telegram.sendMessage(ctx.chat.id, "An error occurred while joining the room. Please try again.");
+        });
+        
+        if (row.length > 0) {
+            keyboard.push(row);
         }
-    } else {
-        try {
-            const roomSnapshot = await dbroom.orderByChild('room').equalTo(dest_room).once('value');
-            const roomData = roomSnapshot.val();
-
-            if (!roomData || roomData.member >= max_join) {
-                await ctx.telegram.sendMessage(
-                    ctx.chat.id,
-                    `${lang(user.lang, dest_room).room_full}`
-                );
-            } else {
-                await dbuser.child(user.userid).update({ room: dest_room });
-                await dbroom.child(dest_room).update({ member: roomData.member + 1 });
-
-                const usersInRoomSnapshot = await dbuser.orderByChild('room').equalTo(dest_room).once('value');
-                const usersInRoomData = usersInRoomSnapshot.val();
-                const usersInRoom = usersInRoomData ? Object.values(usersInRoomData).filter(v => v.userid !== user.userid) : [];
-
-                usersInRoom.forEach(async v => {
-                    await ctx.telegram.sendMessage(
-                        v.userid,
-                        `${lang(v.lang, user.ava || 'Botak').other_join} ${lang(v.lang, roomData.member + 1).people}`
-                    );
-                });
-
-                await ctx.telegram.sendMessage(
-                    ctx.chat.id,
-                    `${lang(user.lang).join} ${lang(user.lang, roomData.member).other_people}`
-                );
+        
+        const message = lang(user.lang, '', '', '', '').room_categories.replace('${par1}', 
+            categories.map(cat => {
+                const catInfo = db.ROOM_CATEGORIES[cat];
+                const catName = catInfo.name[user.lang] || catInfo.name['English'];
+                return `${catInfo.icon} ${catName}`;
+            }).join('\n')
+        );
+        
+        await ctx.telegram.sendMessage(ctx.chat.id, message, {
+            reply_markup: {
+                inline_keyboard: keyboard
             }
-        } catch (err) {
-            console.error("Error finding or joining specific room:", err);
-            ctx.telegram.sendMessage(ctx.chat.id, "An error occurred while joining the room. Please try again.");
-        }
+        });
+        
+        // Store user context for callback handling
+        ctx.session = { user, isVIP };
+        
+    } catch (error) {
+        console.error("Error showing room categories:", error);
+        ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
     }
 };
 
-// Function to shuffle an array
-function shuffle(array) {
-    let currentIndex = array.length, randomIndex;
-    while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+// Handle category selection callback
+module.exports.handleCategoryCallback = async (ctx, category) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.answerCbQuery("User not found. Please try /start again.");
+        }
+        
+        // Get rooms for selected category and user's language
+        const rooms = await db.getRoomsByLanguage(user.lang);
+        const categoryRooms = rooms.filter(room => room.category === category);
+        
+        if (categoryRooms.length === 0) {
+            return ctx.answerCbQuery("No rooms available for this category.");
+        }
+        
+        // Filter VIP rooms if user is not VIP
+        const availableRooms = categoryRooms.filter(room => {
+            if (room.vip && !isVIP) return false;
+            return room.member < room.maxMember;
+        });
+        
+        if (availableRooms.length === 0) {
+            const message = isVIP ? 
+                "All rooms in this category are full." : 
+                "This category contains VIP rooms only. Upgrade to VIP to access.";
+            return ctx.answerCbQuery(message);
+        }
+        
+        // Show available rooms in category
+        await showRoomsInCategory(ctx, user, availableRooms, category);
+        
+    } catch (error) {
+        console.error("Error handling category callback:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
     }
-    return array;
-}
+};
+
+const showRoomsInCategory = async (ctx, user, rooms, category) => {
+    try {
+        const categoryInfo = db.ROOM_CATEGORIES[category];
+        const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
+        
+        const keyboard = [];
+        rooms.forEach(room => {
+            const roomName = room.description || `${categoryInfo.icon} ${categoryName}`;
+            const memberInfo = `${room.member}/${room.maxMember}`;
+            const vipIndicator = room.vip ? '👑 ' : '';
+            
+            keyboard.push([{
+                text: `${vipIndicator}${roomName} (${memberInfo})`,
+                callback_data: `join_room_${room.room}`
+            }]);
+        });
+        
+        // Add back button
+        keyboard.push([{
+            text: '⬅️ Back to Categories',
+            callback_data: 'join_categories'
+        }]);
+        
+        const message = `📂 ${categoryInfo.icon} ${categoryName} Rooms:\n\nSelect a room to join:`;
+        
+        await ctx.editMessageText(message, {
+            reply_markup: {
+                inline_keyboard: keyboard
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error showing rooms in category:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
+    }
+};
+
+// Handle room selection callback
+module.exports.handleRoomCallback = async (ctx, roomId) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.answerCbQuery("User not found. Please try /start again.");
+        }
+        
+        // Get room information
+        const roomSnapshot = await db.collection('rooms').orderByChild('room').equalTo(roomId).once('value');
+        const roomData = roomSnapshot.val();
+        
+        if (!roomData) {
+            return ctx.answerCbQuery("Room not found.");
+        }
+        
+        const room = Object.values(roomData)[0];
+        
+        // Check VIP access
+        if (room.vip && !isVIP) {
+            return ctx.answerCbQuery("This is a VIP room. Upgrade to VIP to access.");
+        }
+        
+        // Check if room is full
+        if (room.member >= room.maxMember) {
+            if (isVIP) {
+                // VIP users can join full rooms with priority
+                await joinRoomWithPriority(ctx, user, room);
+                return ctx.answerCbQuery("VIP Priority: You joined a full room!");
+            } else {
+                return ctx.answerCbQuery("Room is full. Upgrade to VIP for priority access.");
+            }
+        }
+        
+        // Join room normally
+        await joinRoom(ctx, user, room);
+        ctx.answerCbQuery("Successfully joined room!");
+        
+    } catch (error) {
+        console.error("Error handling room callback:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
+    }
+};
+
+const joinRoom = async (ctx, user, room) => {
+    try {
+        // Update user's room
+        await db.collection('users').child(user.userid).update({ room: room.room });
+        
+        // Update room member count
+        await db.updateRoomMemberCount(room.room, 1);
+        
+        // Notify other users in the room
+        const usersInRoomSnapshot = await db.collection('users').orderByChild('room').equalTo(room.room).once('value');
+        const usersInRoomData = usersInRoomSnapshot.val();
+        const usersInRoom = usersInRoomData ? Object.values(usersInRoomData).filter(v => v.userid !== user.userid) : [];
+        
+        const joinMessage = lang(user.lang, user.ava || 'Botak').other_join;
+        const peopleMessage = lang(user.lang, room.member + 1).people;
+        
+        usersInRoom.forEach(async v => {
+            await ctx.telegram.sendMessage(v.userid, `${joinMessage} ${peopleMessage}`);
+        });
+        
+        // Send confirmation to user
+        const categoryInfo = db.ROOM_CATEGORIES[room.category];
+        const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
+        
+        const roomInfo = lang(user.lang, room.description, room.member, room.maxMember, categoryName).room_info;
+        const joinConfirm = lang(user.lang, room.description).join_room;
+        
+        await ctx.telegram.sendMessage(ctx.chat.id, `${joinConfirm}\n\n${roomInfo}`);
+        
+    } catch (error) {
+        console.error("Error joining room:", error);
+        throw error;
+    }
+};
+
+const joinRoomWithPriority = async (ctx, user, room) => {
+    try {
+        // For VIP priority, we might need to remove a non-VIP user if room is full
+        if (room.member >= room.maxMember) {
+            // Find a non-VIP user to remove (simplified implementation)
+            const usersInRoomSnapshot = await db.collection('users').orderByChild('room').equalTo(room.room).once('value');
+            const usersInRoomData = usersInRoomSnapshot.val();
+            
+            if (usersInRoomData) {
+                const usersInRoom = Object.values(usersInRoomData);
+                const nonVIPUser = usersInRoom.find(u => u.userid !== user.userid);
+                
+                if (nonVIPUser) {
+                    // Remove non-VIP user and notify them
+                    await db.collection('users').child(nonVIPUser.userid).update({ room: '' });
+                    await ctx.telegram.sendMessage(nonVIPUser.userid, 
+                        "You were removed from the room due to VIP priority access.");
+                }
+            }
+        }
+        
+        // Join the room
+        await joinRoom(ctx, user, room);
+        
+        // Send VIP priority message
+        await ctx.telegram.sendMessage(ctx.chat.id, lang(user.lang).vip_priority_join);
+        
+    } catch (error) {
+        console.error("Error joining room with priority:", error);
+        throw error;
+    }
+};
+
+// Handle back to categories callback
+module.exports.handleBackToCategories = async (ctx) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        if (!user) {
+            return ctx.answerCbQuery("User not found. Please try /start again.");
+        }
+        
+        await showRoomCategories(ctx, user);
+        ctx.answerCbQuery();
+        
+    } catch (error) {
+        console.error("Error handling back to categories:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
+    }
+};

@@ -1,115 +1,296 @@
-// Media handling utilities for AnonTalk Bot
+const db = require('../db');
+const lang = require('../lang');
 
-/**
- * Check if a message contains any supported media
- * @param {Object} message - Telegram message object
- * @returns {boolean} - True if message contains media
- */
-const isMediaMessage = (message) => {
-    return !!(message.photo || message.video || message.animation || message.document || 
-              message.audio || message.voice || message.video_note || message.sticker ||
-              message.contact || message.location || message.venue);
-};
-
-/**
- * Get the media type from a message
- * @param {Object} message - Telegram message object
- * @returns {string} - Media type description
- */
-const getMediaType = (message) => {
-    if (message.photo) return 'Photo';
-    if (message.video) return 'Video';
-    if (message.animation) return 'Animation';
-    if (message.document) return 'Document';
-    if (message.audio) return 'Audio';
-    if (message.voice) return 'Voice';
-    if (message.video_note) return 'Video Note';
-    if (message.sticker) return 'Sticker';
-    if (message.contact) return 'Contact';
-    if (message.location) return 'Location';
-    if (message.venue) return 'Venue';
-    return 'Unknown';
-};
-
-/**
- * Validate media file size (Telegram has limits)
- * @param {Object} message - Telegram message object
- * @param {number} customLimit - Custom size limit in bytes (optional)
- * @returns {boolean} - True if size is valid
- */
-const validateMediaSize = (message, customLimit = null) => {
-    const defaultLimits = {
-        photo: 10 * 1024 * 1024,      // 10MB
-        video: 50 * 1024 * 1024,      // 50MB (regular), 200MB (VIP)
-        animation: 50 * 1024 * 1024,  // 50MB
-        document: 2000 * 1024 * 1024, // 2GB
-        audio: 50 * 1024 * 1024,      // 50MB
-        voice: 50 * 1024 * 1024,      // 50MB
-        video_note: 50 * 1024 * 1024  // 50MB
-    };
-
-    let fileSize = 0;
-    let mediaType = '';
-
-    if (message.photo) {
-        fileSize = message.photo[message.photo.length - 1].file_size || 0;
-        mediaType = 'photo';
-    } else if (message.video) {
-        fileSize = message.video.file_size || 0;
-        mediaType = 'video';
-    } else if (message.animation) {
-        fileSize = message.animation.file_size || 0;
-        mediaType = 'animation';
-    } else if (message.document) {
-        fileSize = message.document.file_size || 0;
-        mediaType = 'document';
-    } else if (message.audio) {
-        fileSize = message.audio.file_size || 0;
-        mediaType = 'audio';
-    } else if (message.voice) {
-        fileSize = message.voice.file_size || 0;
-        mediaType = 'voice';
-    } else if (message.video_note) {
-        fileSize = message.video_note.file_size || 0;
-        mediaType = 'video_note';
+class MediaHandler {
+    constructor() {
+        this.supportedTypes = {
+            text: true,
+            photo: true,
+            video: true,
+            video_note: true,
+            sticker: true,
+            voice: true,
+            audio: true,
+            document: true,
+            contact: true,
+            location: true,
+            venue: true
+        };
     }
 
-    if (fileSize === 0) return true; // No size info, assume valid
+    // Handle different types of media messages
+    async handleMedia(ctx, user) {
+        try {
+            const messageType = this.getMessageType(ctx);
+            
+            if (!this.supportedTypes[messageType]) {
+                return this.handleUnsupportedMedia(ctx, user);
+            }
 
-    const limit = customLimit || defaultLimits[mediaType] || 50 * 1024 * 1024;
-    return fileSize <= limit;
-};
+            switch (messageType) {
+                case 'text':
+                    return this.handleText(ctx, user);
+                case 'photo':
+                    return this.handlePhoto(ctx, user);
+                case 'video':
+                case 'video_note':
+                    return this.handleVideo(ctx, user, messageType);
+                case 'sticker':
+                    return this.handleSticker(ctx, user);
+                case 'voice':
+                case 'audio':
+                    return this.handleAudio(ctx, user, messageType);
+                case 'document':
+                    return this.handleDocument(ctx, user);
+                case 'contact':
+                    return this.handleContact(ctx, user);
+                case 'location':
+                    return this.handleLocation(ctx, user);
+                case 'venue':
+                    return this.handleVenue(ctx, user);
+                default:
+                    return this.handleUnsupportedMedia(ctx, user);
+            }
+        } catch (error) {
+            console.error('Error handling media:', error);
+            return this.handleError(ctx, user, error);
+        }
+    }
 
-/**
- * Format file size for display
- * @param {number} bytes - File size in bytes
- * @returns {string} - Formatted file size
- */
-const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
+    getMessageType(ctx) {
+        if (ctx.message.text) return 'text';
+        if (ctx.message.photo) return 'photo';
+        if (ctx.message.video) return 'video';
+        if (ctx.message.video_note) return 'video_note';
+        if (ctx.message.sticker) return 'sticker';
+        if (ctx.message.voice) return 'voice';
+        if (ctx.message.audio) return 'audio';
+        if (ctx.message.document) return 'document';
+        if (ctx.message.contact) return 'contact';
+        if (ctx.message.location) return 'location';
+        if (ctx.message.venue) return 'venue';
+        return 'unknown';
+    }
 
-/**
- * Get media caption with avatar prefix
- * @param {Object} message - Telegram message object
- * @param {string} userAvatar - User's avatar
- * @returns {string} - Formatted caption
- */
-const getMediaCaption = (message, userAvatar) => {
-    const originalCaption = message.caption || '';
-    return originalCaption ? `${userAvatar}: ${originalCaption}` : `${userAvatar}`;
-};
+    async handleText(ctx, user) {
+        // Check if user is in a room
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
 
-module.exports = {
-    isMediaMessage,
-    getMediaType,
-    validateMediaSize,
-    formatFileSize,
-    getMediaCaption
-}; 
+        // Get users in the same room
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        
+        // Send message to all users in the room
+        const message = `${user.ava || '👤'}: ${ctx.message.text}`;
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                await ctx.telegram.sendMessage(roomUser.userid, message);
+            } catch (error) {
+                console.error(`Error sending message to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handlePhoto(ctx, user) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        const caption = ctx.message.caption ? `${user.ava || '👤'}: ${ctx.message.caption}` : `${user.ava || '👤'}: 📷 Photo`;
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                await ctx.telegram.sendPhoto(roomUser.userid, ctx.message.photo[0].file_id, {
+                    caption: caption
+                });
+            } catch (error) {
+                console.error(`Error sending photo to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleVideo(ctx, user, type) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        // Check file size for non-VIP users
+        if (!isVIP && ctx.message.video && ctx.message.video.file_size > 50 * 1024 * 1024) { // 50MB limit
+            return ctx.reply('Video too large. Upgrade to VIP for unlimited video size.');
+        }
+
+        const caption = ctx.message.caption ? `${user.ava || '👤'}: ${ctx.message.caption}` : `${user.ava || '👤'}: ${type === 'video_note' ? '🎬 Video Note' : '🎥 Video'}`;
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                if (type === 'video_note') {
+                    await ctx.telegram.sendVideoNote(roomUser.userid, ctx.message.video_note.file_id);
+                } else {
+                    await ctx.telegram.sendVideo(roomUser.userid, ctx.message.video.file_id, {
+                        caption: caption
+                    });
+                }
+            } catch (error) {
+                console.error(`Error sending video to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleSticker(ctx, user) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                await ctx.telegram.sendSticker(roomUser.userid, ctx.message.sticker.file_id);
+            } catch (error) {
+                console.error(`Error sending sticker to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleAudio(ctx, user, type) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        const caption = ctx.message.caption ? `${user.ava || '👤'}: ${ctx.message.caption}` : `${user.ava || '👤'}: ${type === 'voice' ? '🎤 Voice Message' : '🎵 Audio'}`;
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                if (type === 'voice') {
+                    await ctx.telegram.sendVoice(roomUser.userid, ctx.message.voice.file_id, {
+                        caption: caption
+                    });
+                } else {
+                    await ctx.telegram.sendAudio(roomUser.userid, ctx.message.audio.file_id, {
+                        caption: caption
+                    });
+                }
+            } catch (error) {
+                console.error(`Error sending audio to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleDocument(ctx, user) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        const caption = ctx.message.caption ? `${user.ava || '👤'}: ${ctx.message.caption}` : `${user.ava || '👤'}: 📄 Document`;
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                await ctx.telegram.sendDocument(roomUser.userid, ctx.message.document.file_id, {
+                    caption: caption
+                });
+            } catch (error) {
+                console.error(`Error sending document to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleContact(ctx, user) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                await ctx.telegram.sendContact(roomUser.userid, 
+                    ctx.message.contact.phone_number, 
+                    ctx.message.contact.first_name,
+                    {
+                        last_name: ctx.message.contact.last_name,
+                        vcard: ctx.message.contact.vcard
+                    }
+                );
+            } catch (error) {
+                console.error(`Error sending contact to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleLocation(ctx, user) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                await ctx.telegram.sendLocation(roomUser.userid, 
+                    ctx.message.location.latitude, 
+                    ctx.message.location.longitude
+                );
+            } catch (error) {
+                console.error(`Error sending location to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleVenue(ctx, user) {
+        if (!user.room) {
+            return ctx.reply(lang(user.lang).not_in_room);
+        }
+
+        const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        
+        for (const roomUser of usersInRoom) {
+            try {
+                await ctx.telegram.sendVenue(roomUser.userid, 
+                    ctx.message.venue.location.latitude, 
+                    ctx.message.venue.location.longitude,
+                    ctx.message.venue.title,
+                    ctx.message.venue.address,
+                    {
+                        foursquare_id: ctx.message.venue.foursquare_id,
+                        foursquare_type: ctx.message.venue.foursquare_type
+                    }
+                );
+            } catch (error) {
+                console.error(`Error sending venue to user ${roomUser.userid}:`, error);
+            }
+        }
+    }
+
+    async handleUnsupportedMedia(ctx, user) {
+        return ctx.reply('This media type is not supported yet.');
+    }
+
+    async handleError(ctx, user, error) {
+        console.error('Media handler error:', error);
+        return ctx.reply('An error occurred while processing your message.');
+    }
+
+    async getUsersInRoom(roomId, excludeUserId) {
+        try {
+            const snapshot = await db.collection('users').orderByChild('room').equalTo(roomId).once('value');
+            const data = snapshot.val();
+            if (data) {
+                return Object.values(data).filter(user => user.userid !== excludeUserId);
+            }
+            return [];
+        } catch (error) {
+            console.error('Error getting users in room:', error);
+            return [];
+        }
+    }
+}
+
+module.exports = new MediaHandler(); 

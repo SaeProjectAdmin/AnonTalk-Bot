@@ -34,24 +34,24 @@ const showVIPFeatures = async (ctx, userLang) => {
         'Indonesia': {
             title: '👑 Fitur VIP Anda\n\n',
             features: '✨ Fitur VIP Aktif:\n• 🏠 Room pribadi eksklusif\n• 👤 Avatar tanpa batas karakter\n• ⚡ Prioritas join room\n• 🎨 Fitur chat lanjutan\n• 🎯 Dukungan prioritas\n• 📊 Statistik chat pribadi\n• 🔒 Room VIP khusus\n• 🎬 Kirim video tanpa batas\n• 🏗️ Buat room custom\n\n',
-            rooms: '🏠 Room VIP yang Tersedia:\n• /join vip-indo - VIP Indonesia\n• /join vip-eng - VIP English\n• /join vip-jawa - VIP Jawa\n\n',
-            commands: '🛠️ Perintah VIP:\n• /create-room <nama> - Buat room custom\n• /avatar <teks> - Set avatar tanpa batas\n• /vip-stats - Lihat statistik VIP\n\n',
+            rooms: '🏠 Room VIP yang Tersedia:\n• /join - Pilih kategori room\n• 👑 Room VIP untuk setiap bahasa\n• ⚡ Prioritas saat room penuh\n• 📈 Kapasitas 30 anggota (vs 20 regular)\n\n',
+            commands: '🛠️ Perintah VIP:\n• /join - Join room dengan kategori\n• /create-room <nama> - Buat room custom\n• /avatar <teks> - Set avatar tanpa batas\n• /vip-stats - Lihat statistik VIP\n• /rooms - Lihat semua room\n\n',
             status: '💎 Status: VIP Aktif\n⏰ Berlaku: Selamanya\n\n',
             thanks: '🙏 Terima kasih telah mendukung AnonTalk Bot!'
         },
         'English': {
             title: '👑 Your VIP Features\n\n',
             features: '✨ Active VIP Features:\n• 🏠 Exclusive private rooms\n• 👤 Unlimited avatar characters\n• ⚡ Priority room joining\n• 🎨 Advanced chat features\n• 🎯 Priority support\n• 📊 Private chat statistics\n• 🔒 VIP-only rooms\n• 🎬 Send videos without limits\n• 🏗️ Create custom rooms\n\n',
-            rooms: '🏠 Available VIP Rooms:\n• /join vip-indo - VIP Indonesia\n• /join vip-eng - VIP English\n• /join vip-jawa - VIP Jawa\n\n',
-            commands: '🛠️ VIP Commands:\n• /create-room <name> - Create custom room\n• /avatar <text> - Set unlimited avatar\n• /vip-stats - View VIP statistics\n\n',
+            rooms: '🏠 Available VIP Rooms:\n• /join - Choose room category\n• 👑 VIP rooms for each language\n• ⚡ Priority when rooms are full\n• 📈 30 member capacity (vs 20 regular)\n\n',
+            commands: '🛠️ VIP Commands:\n• /join - Join rooms by category\n• /create-room <name> - Create custom room\n• /avatar <text> - Set unlimited avatar\n• /vip-stats - View VIP statistics\n• /rooms - View all rooms\n\n',
             status: '💎 Status: VIP Active\n⏰ Valid: Forever\n\n',
             thanks: '🙏 Thank you for supporting AnonTalk Bot!'
         },
         'Jawa': {
             title: '👑 Fitur VIP Sampeyan\n\n',
             features: '✨ Fitur VIP Aktif:\n• 🏠 Kamar pribadi eksklusif\n• 👤 Avatar tanpa wates karakter\n• ⚡ Prioritas gabung kamar\n• 🎨 Fitur chat lanjutan\n• 🎯 Dhukungan prioritas\n• 📊 Statistik chat pribadi\n• 🔒 Kamar VIP khusus\n• 🎬 Kirim video tanpa wates\n• 🏗️ Gawe kamar custom\n\n',
-            rooms: '🏠 Kamar VIP sing Kasedhiya:\n• /join vip-indo - VIP Indonesia\n• /join vip-eng - VIP English\n• /join vip-jawa - VIP Jawa\n\n',
-            commands: '🛠️ Perintah VIP:\n• /create-room <nama> - Gawe kamar custom\n• /avatar <teks> - Set avatar tanpa wates\n• /vip-stats - Deleng statistik VIP\n\n',
+            rooms: '🏠 Kamar VIP sing Kasedhiya:\n• /join - Pilih kategori kamar\n• 👑 Kamar VIP kanggo saben basa\n• ⚡ Prioritas nalika kamar kebak\n• 📈 Kapasitas 30 anggota (vs 20 regular)\n\n',
+            commands: '🛠️ Perintah VIP:\n• /join - Gabung kamar nganggo kategori\n• /create-room <nama> - Gawe kamar custom\n• /avatar <teks> - Set avatar tanpa wates\n• /vip-stats - Deleng statistik VIP\n• /rooms - Deleng kabeh kamar\n\n',
             status: '💎 Status: VIP Aktif\n⏰ Berlaku: Selamane\n\n',
             thanks: '🙏 Matur nuwun wis dhukung AnonTalk Bot!'
         }
@@ -97,70 +97,87 @@ const showVIPInfo = async (ctx, userLang) => {
     await ctx.reply(fullMessage);
 };
 
-// Function to create VIP room
-const createVIPRoom = async (ctx, user, roomName) => {
+// Handle VIP room creation
+module.exports.createVIPRoom = async (ctx, roomName) => {
     try {
+        const user = await db.getUserByChatId(ctx.chat.id);
         const isVIP = await db.isUserVIP(ctx.chat.id);
         
-        if (!isVIP) {
-            const messages = {
-                'Indonesia': '❌ Hanya pengguna VIP yang dapat membuat room VIP.',
-                'English': '❌ Only VIP users can create VIP rooms.',
-                'Jawa': '❌ Mung pangguna VIP sing bisa gawe kamar VIP.'
-            };
-            
-            await ctx.reply(messages[user.lang] || messages['English']);
-            return;
+        if (!user) {
+            return ctx.reply('User not found. Please try /start again.');
         }
-
-        const roomId = `vip-${Date.now()}`;
-        const newRoom = {
-            room: roomId,
-            name: roomName,
+        
+        if (!isVIP) {
+            return ctx.reply('Only VIP users can create custom rooms. Use /vip to learn more.');
+        }
+        
+        if (!roomName || roomName.trim() === '') {
+            return ctx.reply('Please provide a room name. Usage: /create-room <room_name>');
+        }
+        
+        const roomData = {
             lang: user.lang,
-            member: 1,
-            private: true,
             category: 'vip',
-            vip_only: true,
-            created_by: user.userid
+            description: `👑 ${roomName} (VIP)`,
+            createdBy: ctx.chat.id,
+            maxMember: 30,
+            private: false,
+            vip: true
         };
-
-        // Create VIP room
-        await db.createRoom(newRoom);
         
-        // Join the VIP room
-        await db.updateUser(ctx.chat.id, { room: roomId });
-
-        const messages = {
-            'Indonesia': {
-                title: '👑 Room VIP Dibuat!\n\n',
-                info: `🏠 Room: ${roomName}\n👑 Tipe: VIP Private\n👥 Anggota: 1 (Anda)\n🌐 Bahasa: ${user.lang}\n\n`,
-                features: '💎 Fitur VIP aktif!\n• Room pribadi eksklusif\n• Kapasitas lebih besar\n• Fitur chat lanjutan\n\n',
-                help: '💡 Mulai chatting!\nAjak pengguna VIP lain untuk bergabung!'
-            },
-            'English': {
-                title: '👑 VIP Room Created!\n\n',
-                info: `🏠 Room: ${roomName}\n👑 Type: VIP Private\n👥 Members: 1 (You)\n🌐 Language: ${user.lang}\n\n`,
-                features: '💎 VIP features active!\n• Exclusive private room\n• Larger capacity\n• Advanced chat features\n\n',
-                help: '💡 Start chatting!\nInvite other VIP users to join!'
-            },
-            'Jawa': {
-                title: '👑 Kamar VIP Digawe!\n\n',
-                info: `🏠 Kamar: ${roomName}\n👑 Jenis: VIP Private\n👥 Anggota: 1 (Sampeyan)\n🌐 Basa: ${user.lang}\n\n`,
-                features: '💎 Fitur VIP aktif!\n• Kamar pribadi eksklusif\n• Kapasitas luwih gedhe\n• Fitur chat lanjutan\n\n',
-                help: '💡 Miwiti chatting!\nAjak pangguna VIP liyane kanggo gabung!'
-            }
-        };
-
-        const message = messages[user.lang] || messages['English'];
-        const fullMessage = message.title + message.info + message.features + message.help;
+        const newRoom = await db.createCustomRoom(roomData);
         
-        await ctx.reply(fullMessage);
+        if (newRoom) {
+            const successMessage = lang(user.lang, roomName).custom_room_created;
+            await ctx.reply(successMessage);
+            
+            // Auto-join the created room
+            const joinCommand = require('./join');
+            await joinCommand.handleRoomCallback(ctx, newRoom.room);
+        } else {
+            await ctx.reply('Failed to create room. Please try again.');
+        }
         
     } catch (error) {
         console.error("Error creating VIP room:", error);
-        throw error;
+        await ctx.reply("An error occurred while creating the room.");
     }
 };
 
-module.exports.createVIPRoom = createVIPRoom; 
+// Handle VIP statistics
+module.exports.showVIPStats = async (ctx) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.reply('User not found. Please try /start again.');
+        }
+        
+        if (!isVIP) {
+            return ctx.reply('Only VIP users can view VIP statistics. Use /vip to learn more.');
+        }
+        
+        // Get user's room history and statistics
+        const stats = {
+            totalRooms: 0,
+            vipRooms: 0,
+            totalMessages: 0,
+            vipSince: 'Unknown'
+        };
+        
+        // This would be implemented with actual statistics tracking
+        const statsMessage = `📊 VIP Statistics for ${user.ava || 'User'}:\n\n` +
+            `🏠 Total Rooms Joined: ${stats.totalRooms}\n` +
+            `👑 VIP Rooms Accessed: ${stats.vipRooms}\n` +
+            `💬 Total Messages: ${stats.totalMessages}\n` +
+            `⏰ VIP Since: ${stats.vipSince}\n\n` +
+            `💎 Status: VIP Active`;
+        
+        await ctx.reply(statsMessage);
+        
+    } catch (error) {
+        console.error("Error showing VIP stats:", error);
+        await ctx.reply("An error occurred while fetching VIP statistics.");
+    }
+}; 

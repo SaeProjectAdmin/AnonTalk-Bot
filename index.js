@@ -42,7 +42,92 @@ db.init(() => {
     bot.command('help', (ctx) => commands.help(ctx));
     bot.command('vip', (ctx) => commands.vip(ctx));
     bot.command('create-room', (ctx) => commands.createRoom(ctx));
+    
+    // Handle callback queries for inline keyboards
+    bot.action(/join_category_(.+)/, async (ctx) => {
+        try {
+            const category = ctx.match[1];
+            const joinCommand = require('./command/join');
+            await joinCommand.handleCategoryCallback(ctx, category);
+        } catch (error) {
+            console.error("Error handling category callback:", error);
+            ctx.answerCbQuery("An error occurred. Please try again.");
+        }
+    });
+
+    bot.action(/join_room_(.+)/, async (ctx) => {
+        try {
+            const roomId = ctx.match[1];
+            const joinCommand = require('./command/join');
+            await joinCommand.handleRoomCallback(ctx, roomId);
+        } catch (error) {
+            console.error("Error handling room callback:", error);
+            ctx.answerCbQuery("An error occurred. Please try again.");
+        }
+    });
+
+    bot.action('join_categories', async (ctx) => {
+        try {
+            const joinCommand = require('./command/join');
+            await joinCommand.handleBackToCategories(ctx);
+        } catch (error) {
+            console.error("Error handling back to categories:", error);
+            ctx.answerCbQuery("An error occurred. Please try again.");
+        }
+    });
+
+    bot.action(/lang_(.+)/, async (ctx) => {
+        try {
+            const selectedLang = ctx.match[1];
+            const settings = require('./command/settings');
+            await settings.handleLanguageCallback(ctx, `lang_${selectedLang}`);
+        } catch (error) {
+            console.error("Error handling language callback:", error);
+            ctx.answerCbQuery("An error occurred. Please try again.");
+        }
+    });
+
+    // Handle VIP-related commands
+    bot.command('vip-stats', async (ctx) => {
+        try {
+            const vipCommand = require('./command/vip');
+            await vipCommand.showVIPStats(ctx);
+        } catch (error) {
+            console.error("Error in vip-stats command:", error);
+            ctx.reply("An error occurred. Please try again.");
+        }
+    });
+
+    // Enhanced create-room command
+    bot.command('create-room', async (ctx) => {
+        try {
+            const args = ctx.message.text.split(' ');
+            const roomName = args.slice(1).join(' ');
+            
+            if (!roomName) {
+                return ctx.reply('Usage: /create-room <room_name>');
+            }
+            
+            const vipCommand = require('./command/vip');
+            await vipCommand.createVIPRoom(ctx, roomName);
+        } catch (error) {
+            console.error("Error in create-room command:", error);
+            ctx.reply("An error occurred. Please try again.");
+        }
+    });
+
+    // Handle regular messages
     bot.on('message', (ctx) => userSession(ctx));
+
+    // Global error handler
+    bot.catch((err, ctx) => {
+        console.error(`Error for ${ctx.updateType}:`, err);
+        try {
+            ctx.reply('An error occurred. Please try again later.');
+        } catch (replyError) {
+            console.error('Error sending error message:', replyError);
+        }
+    });
 
     // Bot webhook setup
     bot.launch();
@@ -50,6 +135,19 @@ db.init(() => {
     
     // Log when app is ready
     console.log(`Referral app listening on port ${port}!`);
+    
+    // Graceful shutdown
+    process.once('SIGINT', () => {
+        console.log('Shutting down bot...');
+        bot.stop('SIGINT');
+        db.close();
+    });
+    
+    process.once('SIGTERM', () => {
+        console.log('Shutting down bot...');
+        bot.stop('SIGTERM');
+        db.close();
+    });
 });
 
 module.exports = app;

@@ -7,41 +7,44 @@ const lang = require('../lang');
 // Set language session and present the user with available languages
 const setLang = async (ctx) => {
     try {
-        const dbuser = db.collection('users');
-        const dblang = db.collection('langs');
-
-        // Update user session to 'lang'
-        await dbuser.child(ctx.chat.id).update({ session: 'lang' });
-
-        // Fetch user data
-        const userSnapshot = await dbuser.child(ctx.chat.id).once('value');
-        const user = userSnapshot.val();
-
+        const user = await db.getUserByChatId(ctx.chat.id);
+        
         if (!user) {
             return ctx.telegram.sendMessage(ctx.chat.id, "User not found.");
         }
 
-        // Fetch available languages
-        const langSnapshot = await dblang.once('value');
-        const langs = langSnapshot.val();
+        // Update user session to 'lang'
+        await db.collection('users').child(ctx.chat.id).update({ session: 'lang' });
 
-        let keyboard = [];
-        let rkeyboard = [];
+        // Create inline keyboard for language selection
+        const keyboard = [
+            [
+                {
+                    text: '🇮🇩 Indonesia',
+                    callback_data: 'lang_indonesia'
+                },
+                {
+                    text: '🇺🇸 English',
+                    callback_data: 'lang_english'
+                }
+            ],
+            [
+                {
+                    text: '🇮🇩 Jawa',
+                    callback_data: 'lang_jawa'
+                }
+            ]
+        ];
 
-        // Create the keyboard with languages
-        Object.values(langs).forEach((v, i) => {
-            rkeyboard.push(v.lang);
-            if (i % 2 === 0) {
-                keyboard.push(rkeyboard);
-                rkeyboard = []; // Reset after every 2 items
-            }
-        });
-
-        // Send language selection message with keyboard
+        // Send language selection message with inline keyboard
         await ctx.telegram.sendMessage(
             ctx.chat.id,
-            lang(user.lang, user.lang).current_lang,
-            Markup.keyboard(keyboard).resize(true).oneTime(true)
+            lang(user.lang, user.lang).select_language,
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard
+                }
+            }
         ).catch((err) => false);
 
     } catch (err) {
@@ -50,29 +53,70 @@ const setLang = async (ctx) => {
     }
 };
 
+// Handle language selection callback
+const handleLanguageCallback = async (ctx, selectedLang) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.answerCbQuery("User not found. Please try /start again.");
+        }
+
+        // Map callback data to language names
+        const langMap = {
+            'lang_indonesia': 'Indonesia',
+            'lang_english': 'English',
+            'lang_jawa': 'Jawa'
+        };
+
+        const newLang = langMap[selectedLang];
+        
+        if (!newLang) {
+            return ctx.answerCbQuery("Invalid language selection.");
+        }
+
+        // Update user's language
+        await db.collection('users').child(ctx.chat.id).update({ 
+            lang: newLang,
+            session: '' // Clear session
+        });
+
+        // Send confirmation message
+        const confirmMessage = lang(newLang, newLang).language_changed;
+        await ctx.editMessageText(confirmMessage);
+        
+        ctx.answerCbQuery("Language updated successfully!");
+
+    } catch (error) {
+        console.error("Error handling language callback:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
+    }
+};
+
 // Set avatar session and send the current avatar message
 const setAva = async (ctx) => {
     try {
-        const dbuser = db.collection('users');
-
-        // Update user session to 'ava'
-        await dbuser.child(ctx.chat.id).update({ session: 'ava' });
-
-        // Fetch user data
-        const userSnapshot = await dbuser.child(ctx.chat.id).once('value');
-        const user = userSnapshot.val();
-
+        const user = await db.getUserByChatId(ctx.chat.id);
+        
         if (!user) {
             return ctx.telegram.sendMessage(ctx.chat.id, "User not found.");
         }
 
+        // Update user session to 'ava'
+        await db.collection('users').child(ctx.chat.id).update({ session: 'ava' });
+
         // Check if user is VIP
-        const isVIP = user.vip || false;
+        const isVIP = await db.isUserVIP(ctx.chat.id);
         
         let avatarMessage = lang(user.lang, user.ava).current_ava;
         
         if (isVIP) {
-            avatarMessage += '\n\n💎 VIP Avatar: Anda dapat menggunakan avatar tanpa batas karakter!';
+            const vipMessages = {
+                'Indonesia': '\n\n💎 VIP Avatar: Anda dapat menggunakan avatar tanpa batas karakter!',
+                'English': '\n\n💎 VIP Avatar: You can use avatars with unlimited characters!',
+                'Jawa': '\n\n💎 VIP Avatar: Sampeyan bisa nggunakake avatar tanpa wates karakter!'
+            };
+            avatarMessage += vipMessages[user.lang] || vipMessages['English'];
         }
 
         // Send the current avatar message
@@ -91,5 +135,6 @@ module.exports = {
     setLang,
     setAva,
     saveAva,
-    saveLang
+    saveLang,
+    handleLanguageCallback
 };

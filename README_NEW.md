@@ -1,200 +1,220 @@
-# 🤖 AnonTalk Bot - Anonymous Chat Bot
+# AnonTalk Bot - Enhanced Room System
 
-A feature-rich anonymous chat bot for Telegram with VIP features, multi-language support, and enhanced media sharing capabilities.
+## 🌟 Overview
 
-## 🌟 Features
+AnonTalk Bot is a comprehensive anonymous chat bot for Telegram with an expanded room system, VIP features, and multi-language support. This enhanced version includes 24 default rooms across 3 languages with categorized room types and exclusive VIP features.
 
-### 💬 Anonymous Chat
-- **Anonymous Messaging** - Chat without revealing your identity
-- **Room-based Chat** - Join different chat rooms by topic and language
-- **Real-time Messaging** - Instant message delivery to room members
-- **Media Sharing** - Share photos, videos, stickers, and more
+## 🏗️ System Architecture
 
-### 👑 VIP Features
-- **Unlimited Avatar Characters** - VIP users can use up to 100 characters for avatars
-- **Custom Room Creation** - Create private VIP-only rooms
-- **Enhanced Video Support** - Send videos up to 200MB (vs 50MB for regular users)
-- **Exclusive VIP Rooms** - Access to premium chat rooms
-- **Priority Support** - Faster customer service
+### 📂 Room Categories (9 Categories)
+- **💬 General** - General discussion rooms
+- **😌 Chill** - Relaxed conversation spaces
+- **🎲 Random** - Random topic discussions
+- **🎮 Gaming** - Gaming-related conversations
+- **🎵 Music** - Music and entertainment chat
+- **💻 Tech** - Technology discussions
+- **⚽ Sports** - Sports and fitness chat
+- **🍕 Food** - Food and culinary discussions
+- **👑 VIP** - Exclusive VIP-only rooms
 
-### 🌐 Multi-Language Support
-- **Indonesia** - Full Indonesian language support
-- **English** - Complete English language support  
-- **Jawa** - Javanese language support
+### 🌐 Language Support
+- **🇮🇩 Indonesia** - Full Indonesian support
+- **🇺🇸 English** - Full English support
+- **🇮🇩 Jawa** - Full Javanese support (NEW!)
 
-### 🎬 Media Support
-- **Photos** - Up to 10MB
-- **Videos** - Up to 50MB (regular), 200MB (VIP)
-- **Stickers** - All Telegram stickers
-- **Documents** - Up to 2GB
-- **Audio** - Up to 50MB
-- **Voice Messages** - Up to 50MB
-- **Video Notes** - Up to 50MB
-- **Animations/GIFs** - Up to 50MB
-- **Contacts** - Full contact sharing
-- **Location** - GPS coordinates
-- **Venues** - Location with address
+### 🏠 Room Structure
+- **24 Default Rooms** (8 per language)
+- **Regular Rooms**: 20 member capacity
+- **VIP Rooms**: 30 member capacity
+- **Category-based organization**
+- **Language-specific filtering**
 
-## 💰 VIP Packages (Rupiah)
+## 👑 VIP System
 
-### 📅 Daily Package - Rp 5.000
-- VIP access for 24 hours
-- All VIP features
-- Perfect for trying VIP features
+### 💎 VIP Features
+- **🏠 Exclusive VIP Rooms** - Access to VIP-only rooms
+- **⚡ Priority Joining** - Join full rooms with priority
+- **👤 Unlimited Avatar Characters** - No character limit on avatars
+- **📊 Personal Statistics** - View your chat statistics
+- **🎬 Unlimited Video Size** - Send videos without size restrictions
+- **🏗️ Custom Room Creation** - Create your own VIP rooms
+- **🎯 Priority Support** - Get priority customer support
 
-### 📅 Weekly Package - Rp 25.000
-- VIP access for 7 days
-- All VIP features
-- **28% discount** compared to daily rate
+### 💰 VIP Packages
+- **📅 Daily**: Rp 5.000 (24 hours)
+- **📅 Weekly**: Rp 25.000 (7 days, 28% discount)
+- **📅 Monthly**: Rp 75.000 (30 days, 50% discount)
 
-### 📅 Monthly Package - Rp 75.000
-- VIP access for 30 days
-- All VIP features
-- **50% discount** compared to daily rate
-- **Highest priority** support
+## 📱 Enhanced Media Support
 
-## 🏠 Room Categories
+### ✅ Supported Media Types
+- **Text Messages** - Standard text communication
+- **Photos & Images** - Image sharing with captions
+- **Videos & Video Notes** - Video sharing (VIP: unlimited size)
+- **Stickers & GIFs** - Animated content sharing
+- **Voice Messages** - Audio voice recordings
+- **Audio Files** - Music and audio sharing
+- **Documents & Files** - File sharing
+- **Contact Sharing** - Share contact information
+- **Location Sharing** - Share GPS locations
+- **Venue Sharing** - Share venue information
 
-### General Rooms
-- **General Indonesia** - General chat in Indonesian
-- **General English** - General chat in English
-- **General Jawa** - General chat in Javanese
+## 🛠️ Technical Improvements
 
-### Specialized Rooms
-- **Chill Rooms** - Relaxed conversations
-- **Random Rooms** - Random topics
-- **Gaming Rooms** - Gaming discussions
-- **Music Rooms** - Music conversations
-- **Tech Rooms** - Technology discussions
-- **Sports Rooms** - Sports talk
-- **Food Rooms** - Food discussions
+### 🗄️ Database Enhancements
+- **Helper Functions** - Consistent database operations
+- **VIP Status Management** - Efficient VIP user tracking
+- **Room Categorization** - Organized room structure
+- **Language Support** - Multi-language database schema
+- **Error Handling** - Robust error management
 
-### VIP Rooms (VIP Only)
-- **VIP Indonesia** - Exclusive Indonesian VIP room
-- **VIP English** - Exclusive English VIP room
-- **VIP Jawa** - Exclusive Javanese VIP room
+### 🎯 User Experience
+- **Inline Keyboards** - Modern button-based navigation
+- **Room Grouping** - Category-based room organization
+- **VIP Status Indicators** - Clear VIP feature visibility
+- **Better Error Messages** - User-friendly error handling
+- **Consistent Language Support** - Seamless language switching
+
+### 🛡️ Error Handling
+- **Global Error Catchers** - Comprehensive error management
+- **Graceful Shutdown** - Proper bot termination
+- **Database Connection Management** - Reliable database operations
+- **Middleware Error Handling** - Robust middleware error catching
 
 ## 📋 Commands
 
-### Basic Commands
-- `/start` - Start the bot and see welcome message
-- `/help` - Show help information
-- `/lang` - Set your language preference
-- `/avatar` - Set your avatar (emoji or text)
-- `/join` - Join a room or see available rooms
-- `/exit` - Leave current room
-- `/rooms` - List all available rooms
-- `/list` - Show members in current room
+### 🔧 Basic Commands
+- `/start` - Initialize the bot
+- `/help` - Show command help
+- `/lang` - Change language (with inline keyboard)
+- `/avatar` - Set your avatar
 - `/cancel` - Cancel current action
 
-### VIP Commands
-- `/vip` - Show VIP information and status
-- `/create-room <name>` - Create custom VIP room
-- `/donate` - Support bot development and get VIP
+### 🏠 Room Commands
+- `/join` - Join rooms by category (enhanced with inline keyboard)
+- `/rooms` - View all available rooms (grouped by category)
+- `/exit` - Leave current room
+- `/list` - Show room members
 
-## 🛠️ Installation
+### 👑 VIP Commands
+- `/vip` - View VIP features and status
+- `/vip-stats` - View VIP statistics
+- `/create-room <name>` - Create custom VIP room
+- `/donate` - Support the bot and get VIP
+
+## 🚀 Installation & Setup
 
 ### Prerequisites
 - Node.js (v14 or higher)
-- Firebase Realtime Database
+- Firebase project with Realtime Database
 - Telegram Bot Token
 
-### Setup
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/AnonTalk-Bot.git
-cd AnonTalk-Bot
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Configure environment variables:
-```bash
-cp env.example .env
-```
-
-4. Edit `.env` file with your configuration:
+### Environment Variables
 ```env
 BOT_TOKEN=your_telegram_bot_token
-BOT_NAME=AnonTalkV2Bot
 DB_URL=your_firebase_database_url
-WEBHOOK_URL=your_webhook_url
+FIREBASE_CREDENTIALS=path_to_service_account.json
+BOT_NAME=AnonTalk Bot
 ```
 
-5. Set up Firebase:
-   - Create a Firebase project
-   - Enable Realtime Database
-   - Download service account key
-   - Place `serviceAccount.json` in project root
-
-6. Start the bot:
-```bash
-# Development mode
-npm run dev
-
-# Production mode
-npm start
-```
+### Installation Steps
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up Firebase credentials
+4. Configure environment variables
+5. Run the bot: `npm start`
 
 ## 🔧 Configuration
 
-### Environment Variables
-- `BOT_TOKEN` - Your Telegram bot token
-- `BOT_NAME` - Bot name for display
-- `DB_URL` - Firebase Realtime Database URL
-- `WEBHOOK_URL` - Webhook URL for production
-- `PORT` - Server port (default: 4000)
-- `NODE_ENV` - Environment (development/production)
-
 ### Firebase Setup
-1. Create Firebase project
+1. Create a Firebase project
 2. Enable Realtime Database
-3. Set up security rules
-4. Download service account key
-5. Configure database structure
+3. Download service account JSON
+4. Set up database rules
 
-## 📁 Project Structure
+### Bot Configuration
+- Configure webhook URL
+- Set up bot commands
+- Configure VIP payment system
+- Set up language files
 
+## 📊 Database Schema
+
+### Users Collection
+```json
+{
+  "userid": "telegram_user_id",
+  "lang": "Indonesia|English|Jawa",
+  "ava": "user_avatar_emoji",
+  "room": "current_room_id",
+  "session": "current_session_state"
+}
 ```
-AnonTalk-Bot/
-├── command/           # Bot commands
-│   ├── start.js      # Start command
-│   ├── help.js       # Help command
-│   ├── join.js       # Join room command
-│   ├── exit.js       # Exit room command
-│   ├── settings.js   # Settings commands
-│   ├── misc.js       # Miscellaneous commands
-│   ├── vip.js        # VIP command
-│   └── create-room.js # Create room command
-├── session/          # Session handlers
-│   ├── sessions.js   # Main session handler
-│   ├── lang.js       # Language session
-│   ├── ava.js        # Avatar session
-│   └── room.js       # Room message handler
-├── middleware/       # Middleware
-│   └── userCheck.js  # User validation
-├── utils/           # Utilities
-│   └── mediaHandler.js # Media handling
-├── db.js            # Database operations
-├── lang.js          # Language strings
-├── config.js        # Configuration
-├── index.js         # Main entry point
-└── package.json     # Dependencies
+
+### Rooms Collection
+```json
+{
+  "room": "unique_room_id",
+  "lang": "room_language",
+  "category": "room_category",
+  "member": "current_member_count",
+  "maxMember": "maximum_capacity",
+  "private": "is_private_room",
+  "vip": "is_vip_room",
+  "createdAt": "timestamp",
+  "description": "room_description"
+}
 ```
+
+### VIP Users Collection
+```json
+{
+  "isVIP": "boolean",
+  "activatedAt": "timestamp",
+  "expiresAt": "expiration_timestamp"
+}
+```
+
+## 🌟 Features in Detail
+
+### 🎨 Enhanced Avatar System
+- **Regular Users**: Single emoji avatars
+- **VIP Users**: Unlimited character avatars
+- **Special Effects**: VIP avatars with special indicators
+
+### 🏠 Smart Room Management
+- **Auto-balancing**: Automatic room distribution
+- **Category Filtering**: Easy room discovery
+- **Language Isolation**: Language-specific rooms
+- **Capacity Management**: Dynamic room capacity
+
+### 📱 Modern UI/UX
+- **Inline Keyboards**: Button-based navigation
+- **Category Icons**: Visual room categorization
+- **Status Indicators**: Clear user and room status
+- **Responsive Design**: Works on all devices
+
+### 🔒 Security Features
+- **User Validation**: Proper user authentication
+- **Room Access Control**: VIP room protection
+- **Media Validation**: File size and type checking
+- **Error Recovery**: Graceful error handling
 
 ## 🚀 Deployment
 
-### Local Development
+### Vercel Deployment
 ```bash
-npm run dev
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
 ```
 
-### Production Deployment
+### Firebase Functions
 ```bash
-npm start
+# Deploy to Firebase Functions
+firebase deploy --only functions
 ```
 
 ### Docker Deployment
@@ -204,62 +224,57 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-EXPOSE 4000
+EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-## 🔒 Security
+## 📈 Monitoring & Analytics
 
-### User Privacy
-- Anonymous messaging
-- No personal data collection
-- Secure message forwarding
-- Privacy-focused design
+### Performance Metrics
+- **Room Occupancy**: Track room usage
+- **User Engagement**: Monitor user activity
+- **VIP Conversion**: Track VIP upgrades
+- **Error Rates**: Monitor system health
 
-### Data Protection
-- Firebase security rules
-- Environment variable protection
-- Secure webhook handling
-- Input validation
+### Logging
+- **Structured Logging**: JSON format logs
+- **Error Tracking**: Comprehensive error logging
+- **User Actions**: Track user interactions
+- **System Health**: Monitor bot performance
 
 ## 🤝 Contributing
 
+### Development Setup
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create feature branch
+3. Make changes
+4. Test thoroughly
+5. Submit pull request
+
+### Code Standards
+- **ESLint**: Code linting
+- **Prettier**: Code formatting
+- **JSDoc**: Documentation
+- **Testing**: Unit tests
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
-
-### Documentation
-- [VIP Features](VIP_FEATURES.md) - Detailed VIP feature documentation
-- [Setup Guide](SETUP_GUIDE.md) - Complete setup instructions
-
-### Contact
-- **Telegram**: @your_bot_username
-- **Email**: support@anontalkbot.com
-- **Issues**: GitHub Issues
-
 ## 🙏 Acknowledgments
 
-- Telegram Bot API
-- Firebase Realtime Database
-- Telegraf.js framework
-- Community contributors
+- **Telegram Bot API** - For the bot platform
+- **Firebase** - For the database backend
+- **Telegraf** - For the bot framework
+- **Community** - For feedback and suggestions
 
-## 📊 Statistics
+## 📞 Support
 
-- **Languages Supported**: 3 (Indonesia, English, Jawa)
-- **Room Categories**: 8+ categories
-- **Media Types**: 10+ supported types
-- **VIP Features**: 6+ premium features
-- **Payment Methods**: 5+ options
+- **Documentation**: Check this README
+- **Issues**: Report on GitHub
+- **Discussions**: Use GitHub Discussions
+- **Email**: Contact the development team
 
 ---
 
-**Made with ❤️ for the Telegram community** 
+**AnonTalk Bot** - Enhanced anonymous chat experience with modern features and VIP exclusivity. 
