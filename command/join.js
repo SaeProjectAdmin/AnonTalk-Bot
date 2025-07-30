@@ -17,13 +17,62 @@ module.exports = async (ctx) => {
 
         // Check if user is in a room and exit first
         if (user.room !== '') {
-            await roomExit(ctx, () => showRoomCategories(ctx, user));
+            await roomExit(ctx, () => joinRandomRoom(ctx, user));
         } else {
-            await showRoomCategories(ctx, user);
+            await joinRandomRoom(ctx, user);
         }
     } catch (err) {
         console.error("Error in join command:", err);
         ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
+    }
+};
+
+const joinRandomRoom = async (ctx, user) => {
+    try {
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        // Get all rooms for user's language (ignore category)
+        const rooms = await db.getRoomsByLanguage(user.lang);
+        
+        if (rooms.length === 0) {
+            const noRoomsMessage = user.lang === 'Indonesia' ? 
+                "❌ Tidak ada room yang tersedia untuk bahasa Anda." : 
+                "❌ No rooms available for your language.";
+            return ctx.telegram.sendMessage(ctx.chat.id, noRoomsMessage);
+        }
+        
+        // Filter available rooms (non-VIP rooms for non-VIP users, all rooms for VIP users)
+        const availableRooms = rooms.filter(room => {
+            if (room.vip && !isVIP) return false;
+            return room.member < room.maxMember;
+        });
+        
+        if (availableRooms.length === 0) {
+            const message = isVIP ? 
+                (user.lang === 'Indonesia' ? "❌ Semua room sudah penuh." : "❌ All rooms are full.") : 
+                (user.lang === 'Indonesia' ? "❌ Semua room yang tersedia adalah VIP-only. Upgrade ke VIP untuk akses." : "❌ All available rooms are VIP-only. Upgrade to VIP to access.");
+            return ctx.telegram.sendMessage(ctx.chat.id, message);
+        }
+        
+        // Select a random room
+        const randomIndex = Math.floor(Math.random() * availableRooms.length);
+        const randomRoom = availableRooms[randomIndex];
+        
+        // Join the random room
+        await joinRoom(ctx, user, randomRoom);
+        
+        const randomMessage = user.lang === 'Indonesia' ? 
+            '🎲 Anda telah bergabung dengan room acak!' :
+            '🎲 You have joined a random room!';
+        
+        ctx.telegram.sendMessage(ctx.chat.id, randomMessage);
+        
+    } catch (error) {
+        console.error("Error joining random room:", error);
+        const errorMessage = user.lang === 'Indonesia' ? 
+            "❌ Terjadi kesalahan saat bergabung dengan room acak. Silakan coba lagi." :
+            "❌ An error occurred while joining random room. Please try again.";
+        ctx.telegram.sendMessage(ctx.chat.id, errorMessage);
     }
 };
 
@@ -351,3 +400,6 @@ module.exports.handleBackToCategories = async (ctx) => {
         ctx.answerCbQuery("An error occurred. Please try again.");
     }
 };
+
+// Export showRoomCategories for menu system
+module.exports.showRoomCategories = showRoomCategories;

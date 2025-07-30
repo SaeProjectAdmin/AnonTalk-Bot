@@ -95,10 +95,10 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
             const customMessage = {
                 'Indonesia': '✏️ **Input Avatar Custom**\n\nKirim emoji, huruf, atau angka (maksimal 2 karakter):',
                 'English': '✏️ **Custom Avatar Input**\n\nSend emoji, letters, or numbers (max 2 characters):',
-        
             };
             
             await ctx.editMessageText(customMessage[user.lang] || customMessage['English'], {
+                parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]
@@ -109,8 +109,11 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
             ctx.answerCbQuery();
             
         } else if (avatarType === 'remove') {
-            // Remove avatar
-            await db.collection('users').child(ctx.chat.id).update({ ava: '' });
+            // Remove avatar and clear session
+            await db.collection('users').child(ctx.chat.id).update({ 
+                ava: '',
+                session: ''
+            });
             
             const removeMessage = {
                 'Indonesia': '✅ **Avatar berhasil dihapus!**\n\nAvatar Anda sekarang menggunakan default.',
@@ -119,6 +122,7 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
             };
             
             await ctx.editMessageText(removeMessage[user.lang] || removeMessage['English'], {
+                parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]
@@ -129,14 +133,18 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
             ctx.answerCbQuery('Avatar removed!');
             
         } else if (avatarType === 'back') {
-            // Go back to avatar menu
+            // Clear session and go back to avatar menu
+            await db.collection('users').child(ctx.chat.id).update({ session: '' });
             const avatarCommand = require('./avatar');
             await avatarCommand(ctx);
             ctx.answerCbQuery();
             
         } else {
-            // Set selected avatar
-            await db.collection('users').child(ctx.chat.id).update({ ava: avatarType });
+            // Set selected avatar and clear session
+            await db.collection('users').child(ctx.chat.id).update({ 
+                ava: avatarType,
+                session: ''
+            });
             
             const successMessage = {
                 'Indonesia': `✅ **Avatar berhasil diubah!**\n\nAvatar baru Anda: ${avatarType}`,
@@ -145,6 +153,7 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
             };
             
             await ctx.editMessageText(successMessage[user.lang] || successMessage['English'], {
+                parse_mode: 'Markdown',
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]

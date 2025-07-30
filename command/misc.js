@@ -17,34 +17,23 @@ module.exports = {
                 return ctx.telegram.sendMessage(ctx.chat.id, "No rooms available for your language.");
             }
 
-            // Group rooms by category
-            const roomsByCategory = {};
-            rooms.forEach(room => {
-                if (!room.private) {
-                    if (!roomsByCategory[room.category]) {
-                        roomsByCategory[room.category] = [];
-                    }
-                    roomsByCategory[room.category].push(room);
-                }
-            });
+            // Filter out private rooms and sort by member count (most active first)
+            const publicRooms = rooms
+                .filter(room => !room.private)
+                .sort((a, b) => b.member - a.member);
 
             let room_list = '';
             
-            // Display rooms grouped by category
-            Object.keys(roomsByCategory).forEach(category => {
-                const categoryInfo = db.ROOM_CATEGORIES[category];
-                const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
+            // Display all rooms in a single list without categories
+            publicRooms.forEach((room, index) => {
+                const currentRoomIndicator = room.room === user.room ? '🏠 ' : '';
+                const vipIndicator = room.vip ? '👑 ' : '';
+                const roomName = room.description || `${db.ROOM_CATEGORIES[room.category]?.icon || '📁'} ${db.ROOM_CATEGORIES[room.category]?.name[user.lang] || db.ROOM_CATEGORIES[room.category]?.name['English'] || room.category}`;
+                const memberInfo = `${room.member}/${room.maxMember}`;
                 
-                room_list += `\n${categoryInfo.icon} ${categoryName}:\n`;
-                
-                roomsByCategory[category].forEach(room => {
-                    const currentRoomIndicator = room.room === user.room ? '🏠 ' : '';
-                    const vipIndicator = room.vip ? '👑 ' : '';
-                    const memberInfo = `${room.member}/${room.maxMember}`;
-                    const roomName = room.description || `${categoryInfo.icon} ${categoryName}`;
-                    
-                    room_list += `${currentRoomIndicator}${vipIndicator}${roomName} (${memberInfo})\n`;
-                });
+                // Add room number for better organization
+                const roomNumber = (index + 1).toString().padStart(2, '0');
+                room_list += `${roomNumber}. ${currentRoomIndicator}${vipIndicator}${roomName} (${memberInfo})\n`;
             });
 
             // Add VIP status information

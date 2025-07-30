@@ -54,14 +54,6 @@ const handleMenuCallbacks = async (ctx) => {
                 await handleAvatarCallback(ctx, callbackData.replace('avatar_', ''));
                 break;
                 
-            // Handle specific avatar selections
-            case (callbackData.match(/^avatar_[^_]+$/) ? callbackData : null):
-                if (callbackData.startsWith('avatar_')) {
-                    const avatarType = callbackData.replace('avatar_', '');
-                    await handleAvatarCallback(ctx, avatarType);
-                }
-                break;
-                
             // Join room callbacks
             case 'join_random_room':
                 await handleRandomRoom(ctx);
@@ -141,7 +133,13 @@ const handleMenuCallbacks = async (ctx) => {
                 break;
                 
             default:
-                await ctx.reply('❌ Menu tidak ditemukan');
+                // Handle avatar selections
+                if (callbackData.startsWith('avatar_')) {
+                    const avatarType = callbackData.replace('avatar_', '');
+                    await handleAvatarCallback(ctx, avatarType);
+                } else {
+                    await ctx.reply('❌ Menu tidak ditemukan');
+                }
         }
         
     } catch (error) {

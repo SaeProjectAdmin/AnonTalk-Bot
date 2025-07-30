@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const compression = require('compression');
 const performanceMonitor = require('./utils/performance');
+const db = require('./db');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -141,6 +142,47 @@ server.on('error', (error) => {
     process.exit(1);
 });
 
+// Handle custom avatar input
+async function handleCustomAvatarInput(ctx, message) {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.reply('❌ User not found. Please try /start again.');
+        }
+        
+        // Validate custom avatar input (max 2 characters)
+        if (message.length > 2) {
+            const errorMessage = user.lang === 'Indonesia' ? 
+                '❌ Avatar terlalu panjang! Maksimal 2 karakter.' :
+                '❌ Avatar too long! Maximum 2 characters.';
+            return ctx.reply(errorMessage);
+        }
+        
+        // Update user's avatar
+        await db.collection('users').child(ctx.chat.id).update({ 
+            ava: message,
+            session: '' // Clear session
+        });
+        
+        const successMessage = user.lang === 'Indonesia' ? 
+            `✅ **Avatar berhasil diubah!**\n\nAvatar baru Anda: ${message}` :
+            `✅ **Avatar changed successfully!**\n\nYour new avatar: ${message}`;
+        
+        await ctx.reply(successMessage, {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]
+                ]
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error handling custom avatar input:', error);
+        ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+    }
+}
+
 // Bot initialization function
 async function initializeBot() {
     try {
@@ -269,11 +311,11 @@ async function initializeBot() {
             }
         });
         
-        // Join command
+        // Join command - directly join random room
         bot.command('join', async (ctx) => {
             try {
-                if (!menu) menu = require('./command/menu');
-                await menu.showJoinMenu(ctx);
+                const joinCommand = require('./command/join');
+                await joinCommand(ctx);
             } catch (error) {
                 console.error('Error in join command:', error);
                 ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
@@ -305,10 +347,21 @@ async function initializeBot() {
         // Rooms command
         bot.command('rooms', async (ctx) => {
             try {
-                if (!menu) menu = require('./command/menu');
-                await menu.showRoomsMenu(ctx);
+                const misc = require('./command/misc');
+                await misc.rooms(ctx);
             } catch (error) {
                 console.error('Error in rooms command:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
+        });
+        
+        // List command - show users in current room
+        bot.command('list', async (ctx) => {
+            try {
+                const misc = require('./command/misc');
+                await misc.list(ctx);
+            } catch (error) {
+                console.error('Error in list command:', error);
                 ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
             }
         });
@@ -331,9 +384,16 @@ async function initializeBot() {
             // Skip if it's a command
             if (message && !message.startsWith('/')) {
                 try {
-                    // Use smart menu handler for non-command messages
-                    const autoMenu = loadAutoMenu();
-                    await autoMenu.smartMenuHandler(ctx);
+                    // Check if user is in avatar custom input mode
+                    const user = await db.getUserByChatId(ctx.chat.id);
+                    if (user && user.session === 'ava') {
+                        // Handle custom avatar input
+                        await handleCustomAvatarInput(ctx, message);
+                    } else {
+                        // Use smart menu handler for non-command messages
+                        const autoMenu = loadAutoMenu();
+                        await autoMenu.smartMenuHandler(ctx);
+                    }
                 } catch (error) {
                     console.error('Error in smart menu:', error);
                     // Fallback to simple reply

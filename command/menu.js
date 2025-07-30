@@ -201,18 +201,12 @@ Pilih jenis bantuan yang Anda butuhkan:
     
     rooms: `🏠 **Daftar Room Tersedia**
 
-Total: **24 rooms aktif** di 9 kategori
+Total: **24 rooms aktif** tersedia untuk Anda
 
-**Kategori Room:**
-• 🎮 Gaming (3 rooms)
-• 💬 General (3 rooms)
-• 📚 Education (3 rooms)
-• 🎵 Music (3 rooms)
-• 🎬 Entertainment (3 rooms)
-• 💻 Technology (3 rooms)
-• 🏃 Sports (3 rooms)
-• 🍔 Food (3 rooms)
-• ✈️ Travel (3 rooms)`,
+**Room Tersedia:**
+Semua room ditampilkan berdasarkan jumlah user aktif (terbanyak di atas)
+
+Gunakan /rooms untuk melihat daftar lengkap room dengan jumlah user aktif.`,
     
     settings: `⚙️ **Pengaturan AnonTalk Bot**
 
@@ -308,7 +302,19 @@ module.exports = {
         await autoRegisterUser(ctx);
         return handleMenu(ctx, 'main');
     },
-    showJoinMenu: (ctx) => handleMenu(ctx, 'join'),
+    showJoinMenu: async (ctx) => {
+        try {
+            const joinCommand = require('./join');
+            const user = await db.getUserByChatId(ctx.chat.id);
+            if (!user) {
+                return ctx.reply('❌ User not found. Please try /start again.');
+            }
+            await joinCommand.showRoomCategories(ctx, user);
+        } catch (error) {
+            console.error('Error showing join menu:', error);
+            ctx.reply('❌ Terjadi kesalahan saat menampilkan menu join');
+        }
+    },
     showLanguageMenu: (ctx) => handleMenu(ctx, 'language'),
     showVipMenu: (ctx) => handleMenu(ctx, 'vip'),
     showHelpMenu: (ctx) => handleMenu(ctx, 'help'),
