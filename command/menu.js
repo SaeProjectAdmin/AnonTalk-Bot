@@ -57,9 +57,6 @@ const menuKeyboards = {
                 { text: '🇺🇸 English', callback_data: 'lang_en' }
             ],
             [
-    
-            ],
-            [
                 { text: '🔙 Back to Menu', callback_data: 'menu_main' }
             ]
         ]
