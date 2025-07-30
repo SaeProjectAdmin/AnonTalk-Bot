@@ -126,23 +126,26 @@ class MediaHandler {
     // Increment warning count for user
     async incrementWarningCount(userId) {
         try {
-            const userRef = db.collection('users').child(userId);
-            const snapshot = await userRef.once('value');
-            const userData = snapshot.val();
-            
-            const currentWarnings = userData?.warnings || 0;
-            const newWarnings = currentWarnings + 1;
-            
-            await userRef.update({ warnings: newWarnings });
-            
-            // Auto-ban after 3 warnings (optional)
-            if (newWarnings >= 3) {
-                await userRef.update({ 
-                    banned: true, 
-                    bannedAt: new Date().toISOString(),
-                    banReason: 'Multiple content violations'
-                });
-                console.log(`🚫 User ${userId} auto-banned for multiple violations`);
+            const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(userId).once('value');
+            const userData = userSnapshot.val();
+            if (userData) {
+                const userKey = Object.keys(userData)[0];
+                const userRef = db.adminDb.ref('users').child(userKey);
+                
+                const currentWarnings = userData[userKey]?.warnings || 0;
+                const newWarnings = currentWarnings + 1;
+                
+                await userRef.update({ warnings: newWarnings });
+                
+                // Auto-ban after 3 warnings (optional)
+                if (newWarnings >= 3) {
+                    await userRef.update({ 
+                        banned: true, 
+                        bannedAt: new Date().toISOString(),
+                        banReason: 'Multiple content violations'
+                    });
+                    console.log(`🚫 User ${userId} auto-banned for multiple violations`);
+                }
             }
         } catch (error) {
             console.error('Error updating warning count:', error);
@@ -449,7 +452,7 @@ class MediaHandler {
 
     async getUsersInRoom(roomId, excludeUserId) {
         try {
-            const snapshot = await db.collection('users').orderByChild('room').equalTo(roomId).once('value');
+            const snapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(roomId).once('value');
             const data = snapshot.val();
             if (data) {
                 return Object.values(data).filter(user => user.userid !== excludeUserId);

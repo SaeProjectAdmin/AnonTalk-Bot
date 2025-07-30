@@ -56,8 +56,17 @@ const joinRandomRoom = async (ctx, user) => {
 
 const joinRoom = async (ctx, user, room) => {
     try {
+        // Get user key first
+        const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+        const userData = userSnapshot.val();
+        const userKey = userData ? Object.keys(userData)[0] : null;
+        
+        if (!userKey) {
+            throw new Error('User key not found');
+        }
+        
         // Update user's room and activity
-        await db.collection('users').child(user.userid).update({ 
+        await db.adminDb.ref('users').child(userKey).update({ 
             room: room.room,
             currentRoom: room.room,
             lastActivity: Date.now()
@@ -67,9 +76,9 @@ const joinRoom = async (ctx, user, room) => {
         await db.updateRoomMemberCount(room.room, 1);
         
         // Notify other users in the room
-        const usersInRoomSnapshot = await db.collection('users').orderByChild('room').equalTo(room.room).once('value');
+        const usersInRoomSnapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(room.room).once('value');
         const usersInRoomData = usersInRoomSnapshot.val();
-        const usersInRoom = usersInRoomData ? Object.values(usersInRoomData).filter(v => v.userid !== user.userid) : [];
+        const usersInRoom = usersInRoomData ? Object.values(usersInRoomData).filter(v => v.userid !== ctx.chat.id) : [];
         
         const joinMessage = lang(user.lang, user.ava || 'Botak').other_join;
         const peopleMessage = lang(user.lang, room.member + 1).people;
@@ -106,7 +115,7 @@ module.exports.handleRoomCallback = async (ctx, roomId) => {
         }
         
         // Get room by ID
-        const roomSnapshot = await db.collection('rooms').orderByChild('room').equalTo(roomId).once('value');
+        const roomSnapshot = await db.adminDb.ref('rooms').orderByChild('room').equalTo(roomId).once('value');
         const roomData = roomSnapshot.val();
         
         if (!roomData) {
@@ -129,6 +138,24 @@ module.exports.handleRoomCallback = async (ctx, roomId) => {
         
     } catch (error) {
         console.error("Error handling room callback:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
+    }
+};
+
+// Handle random room callback from menu
+module.exports.handleRandomRoomCallback = async (ctx) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.answerCbQuery("User not found. Please try /start again.");
+        }
+
+        // Direct join to random room
+        await joinRandomRoom(ctx, user);
+        
+    } catch (error) {
+        console.error("Error in random room callback:", error);
         ctx.answerCbQuery("An error occurred. Please try again.");
     }
 };

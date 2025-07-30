@@ -571,6 +571,39 @@ async function initializeBot() {
                 ctx.reply('❌ Terjadi kesalahan.');
             }
         });
+
+        // Room stats
+        bot.command('roomstats', async (ctx) => {
+            try {
+                const adminCommands = require('./command/admin-commands');
+                await adminCommands.roomStats(ctx);
+            } catch (error) {
+                console.error('Error in roomstats command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // Update room count
+        bot.command('updateroomcount', async (ctx) => {
+            try {
+                const adminCommands = require('./command/admin-commands');
+                await adminCommands.updateRoomCount(ctx);
+            } catch (error) {
+                console.error('Error in updateroomcount command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // All room stats
+        bot.command('allroomstats', async (ctx) => {
+            try {
+                const adminCommands = require('./command/admin-commands');
+                await adminCommands.allRoomStats(ctx);
+            } catch (error) {
+                console.error('Error in allroomstats command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
         
         // Test command
         bot.command('test', (ctx) => {

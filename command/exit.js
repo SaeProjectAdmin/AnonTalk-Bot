@@ -2,12 +2,9 @@ const db = require('../db'); // Firebase DB instance
 const lang = require('../lang'); // Language module
 
 module.exports = async (ctx, _join = null) => {
-    const dbuserRef = db.collection('users'); // Firebase 'users' collection reference
-    const dbroomRef = db.collection('rooms'); // Firebase 'rooms' collection reference
-
     try {
         // Fetch user by their chat ID
-        const userSnapshot = await dbuserRef.orderByChild('userid').equalTo(ctx.chat.id).once('value');
+        const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
         const userData = userSnapshot.val();
         if (!userData) {
             return ctx.telegram.sendMessage(ctx.chat.id, "User not found.");
@@ -17,7 +14,7 @@ module.exports = async (ctx, _join = null) => {
         const user = userData[userIdKey]; // User data
 
         // Fetch other users in the same room (but not the current user)
-        const usersInRoomSnapshot = await dbuserRef
+        const usersInRoomSnapshot = await db.adminDb.ref('users')
             .orderByChild('room')
             .equalTo(user.room)
             .once('value');
@@ -30,10 +27,10 @@ module.exports = async (ctx, _join = null) => {
             : [];
 
         // Update room member count in the 'rooms' collection
-        await dbroomRef.child(user.room).update({ member: usersInRoom.length });
+        await db.adminDb.ref('rooms').child(user.room).update({ member: usersInRoom.length });
 
         // Clear user's room
-        await dbuserRef.child(userIdKey).update({ room: '' });
+        await db.adminDb.ref('users').child(userIdKey).update({ room: '' });
 
         // Notify other users in the room that the user has left
         for (const roomUser of usersInRoom) {

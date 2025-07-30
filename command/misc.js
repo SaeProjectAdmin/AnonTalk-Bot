@@ -17,24 +17,56 @@ module.exports = {
                 return ctx.telegram.sendMessage(ctx.chat.id, "No rooms available for your language.");
             }
 
-            // Filter out private rooms and sort by member count (most active first)
-            const publicRooms = rooms
+            // Get real-time user count for each room
+            const roomsWithRealCount = await Promise.all(rooms.map(async (room) => {
+                try {
+                    // Count users currently in this room
+                    const roomUsersSnapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(room.room).once('value');
+                    const roomUsers = roomUsersSnapshot.val();
+                    const realMemberCount = roomUsers ? Object.keys(roomUsers).length : 0;
+                    
+                    return {
+                        ...room,
+                        realMember: realMemberCount
+                    };
+                } catch (error) {
+                    console.error(`Error counting users in room ${room.room}:`, error);
+                    return {
+                        ...room,
+                        realMember: room.member || 0
+                    };
+                }
+            }));
+
+            // Filter out private rooms and sort by real member count (most active first)
+            const publicRooms = roomsWithRealCount
                 .filter(room => !room.private)
-                .sort((a, b) => b.member - a.member);
+                .sort((a, b) => b.realMember - a.realMember);
 
             let room_list = '';
+            let totalRooms = 0;
+            let totalUsers = 0;
             
             // Display all rooms in a single list without categories
             publicRooms.forEach((room, index) => {
                 const currentRoomIndicator = room.room === user.room ? '🏠 ' : '';
                 const vipIndicator = room.vip ? '👑 ' : '';
                 const roomName = room.description || `${db.ROOM_CATEGORIES[room.category]?.icon || '📁'} ${db.ROOM_CATEGORIES[room.category]?.name[user.lang] || db.ROOM_CATEGORIES[room.category]?.name['English'] || room.category}`;
-                const memberInfo = `${room.member}/${room.maxMember}`;
+                
+                // Use real member count instead of stored count
+                const memberInfo = `${room.realMember}/${room.maxMember}`;
+                totalRooms++;
+                totalUsers += room.realMember;
                 
                 // Add room number for better organization
                 const roomNumber = (index + 1).toString().padStart(2, '0');
                 room_list += `${roomNumber}. ${currentRoomIndicator}${vipIndicator}${roomName} (${memberInfo})\n`;
             });
+
+            // Add summary information
+            const summaryText = user.lang === 'Indonesia' ? 
+                `\n📊 **Ringkasan:**\n🏠 Total Room: ${totalRooms}\n👥 Total User: ${totalUsers}\n` :
+                `\n📊 **Summary:**\n🏠 Total Rooms: ${totalRooms}\n👥 Total Users: ${totalUsers}\n`;
 
             // Add VIP status information
             if (isVIP) {
@@ -43,9 +75,12 @@ module.exports = {
                 room_list += `\n💡 Upgrade ke VIP untuk akses room eksklusif`;
             }
 
+            const fullMessage = `${lang(user.lang, room_list).rooms}${summaryText}`;
+
             await ctx.telegram.sendMessage(
                 ctx.chat.id,
-                `${lang(user.lang, room_list).rooms}`
+                fullMessage,
+                { parse_mode: 'Markdown' }
             ).catch(() => false);
 
         } catch (err) {
@@ -63,20 +98,55 @@ module.exports = {
             }
 
             if (user.room) {
-                const roomUserSnapshot = await db.collection('users').orderByChild('room').equalTo(user.room).once('value');
+                const roomUserSnapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(user.room).once('value');
                 const roomUserData = roomUserSnapshot.val();
 
                 let people_list = '';
+                let userCount = 0;
+                let vipCount = 0;
+                
                 if (roomUserData) {
-                    Object.values(roomUserData).forEach((person) => {
-                        people_list += `${person.ava || '👤'}, `;
+                    // Get VIP status for all users in the room
+                    const usersWithVIP = await Promise.all(
+                        Object.values(roomUserData).map(async (person) => {
+                            const isVIP = await db.isUserVIP(person.userid);
+                            return { ...person, isVIP };
+                        })
+                    );
+
+                    // Sort users: VIP first, then by join time
+                    usersWithVIP.sort((a, b) => {
+                        if (a.isVIP && !b.isVIP) return -1;
+                        if (!a.isVIP && b.isVIP) return 1;
+                        return (a.joinDate || 0) - (b.joinDate || 0);
                     });
-                    people_list = people_list.slice(0, -2); // Remove the trailing comma and space
+
+                    usersWithVIP.forEach((person) => {
+                        const vipBadge = person.isVIP ? '👑' : '';
+                        const avatar = person.ava || '👤';
+                        people_list += `${vipBadge}${avatar} `;
+                        userCount++;
+                        if (person.isVIP) vipCount++;
+                    });
+                    
+                    people_list = people_list.trim(); // Remove trailing space
                 }
+
+                // Get room information
+                const roomSnapshot = await db.adminDb.ref('rooms').child(user.room).once('value');
+                const roomData = roomSnapshot.val();
+                const roomName = roomData ? (roomData.description || 'Unknown Room') : 'Unknown Room';
+                const maxMembers = roomData ? roomData.maxMember : 20;
+
+                // Create detailed message
+                const message = user.lang === 'Indonesia' ?
+                    `🏠 **Room:** ${roomName}\n👥 **User dalam room:** ${userCount}/${maxMembers}\n\n${people_list}\n\n👑 VIP: ${vipCount} user` :
+                    `🏠 **Room:** ${roomName}\n👥 **Users in room:** ${userCount}/${maxMembers}\n\n${people_list}\n\n👑 VIP: ${vipCount} users`;
 
                 await ctx.telegram.sendMessage(
                     ctx.chat.id,
-                    `${lang(user.lang, people_list).list}`
+                    message,
+                    { parse_mode: 'Markdown' }
                 ).catch(() => false);
             } else {
                 await ctx.telegram.sendMessage(

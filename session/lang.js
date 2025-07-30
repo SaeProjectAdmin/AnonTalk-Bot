@@ -4,10 +4,13 @@ const lang = require('../lang');
 
 module.exports = async (ctx, user) => {
     try {
-        const dbuser = db.collection('users');
-
         // Update the user's language and reset the session
-        await dbuser.child(ctx.chat.id).update({ lang: ctx.message.text, session: '' });
+        const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+        const userData = userSnapshot.val();
+        if (userData) {
+            const userKey = Object.keys(userData)[0];
+            await db.adminDb.ref('users').child(userKey).update({ lang: ctx.message.text, session: '' });
+        }
 
         // Send confirmation message to the user for changing language
         await ctx.telegram.sendMessage(

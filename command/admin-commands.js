@@ -139,17 +139,136 @@ const adminHelp = async (ctx) => {
         `• /checkvip <user_id> - Cek status VIP user\n` +
         `• /listvip - Lihat daftar semua user VIP\n` +
         `• /removevip <user_id> - Hapus status VIP user\n\n` +
+        `**Room Management:**\n` +
+        `• /roomstats <room_id> - Lihat statistik room\n` +
+        `• /updateroomcount <room_id> - Update jumlah member room\n` +
+        `• /allroomstats - Lihat statistik semua room\n\n` +
         `**Contoh Penggunaan:**\n` +
         `• /setvip 123456789 true - Set user sebagai VIP\n` +
-        `• /setvip 123456789 false - Hapus status VIP user\n` +
         `• /checkvip 123456789 - Cek apakah user VIP\n` +
-        `• /removevip 123456789 - Hapus status VIP user\n\n` +
+        `• /roomstats room123 - Lihat statistik room\n` +
+        `• /updateroomcount room123 - Update jumlah member\n\n` +
         `💡 **Tips:**\n` +
         `• User ID bisa didapat dari forward message atau reply\n` +
-        `• Gunakan /listvip untuk melihat semua user VIP\n` +
+        `• Room ID bisa dilihat dari command /rooms\n` +
         `• Status VIP akan tersimpan permanen sampai dihapus`;
 
     await ctx.reply(helpMessage, { parse_mode: 'Markdown' });
+};
+
+// Command: /roomstats <room_id>
+const roomStats = async (ctx) => {
+    if (!isAdmin(ctx.from.id)) {
+        return ctx.reply('❌ Anda tidak memiliki akses admin.');
+    }
+
+    const args = ctx.message.text.split(' ');
+    if (args.length < 2) {
+        return ctx.reply('❌ Format: /roomstats <room_id>\nContoh: /roomstats room123');
+    }
+
+    const roomId = args[1];
+
+    try {
+        const stats = await db.getRoomStatistics(roomId);
+        
+        if (!stats) {
+            return ctx.reply('❌ Room tidak ditemukan.');
+        }
+
+        const message = `📊 **Statistik Room:** ${stats.roomName}\n\n` +
+            `🏠 Room ID: \`${stats.roomId}\`\n` +
+            `👥 Member Aktual: ${stats.actualMembers}/${stats.maxMembers}\n` +
+            `💾 Member Tersimpan: ${stats.storedMembers}\n` +
+            `👑 VIP Members: ${stats.vipMembers}\n` +
+            `🌐 Bahasa: ${stats.language}\n` +
+            `💎 VIP Room: ${stats.isVIP ? 'Ya' : 'Tidak'}\n\n` +
+            `📈 **Status:** ${stats.actualMembers === stats.storedMembers ? '✅ Sinkron' : '⚠️ Tidak Sinkron'}`;
+
+        await ctx.reply(message, { parse_mode: 'Markdown' });
+    } catch (error) {
+        console.error("Error getting room stats:", error);
+        await ctx.reply("❌ Terjadi kesalahan saat mengambil statistik room.");
+    }
+};
+
+// Command: /updateroomcount <room_id>
+const updateRoomCount = async (ctx) => {
+    if (!isAdmin(ctx.from.id)) {
+        return ctx.reply('❌ Anda tidak memiliki akses admin.');
+    }
+
+    const args = ctx.message.text.split(' ');
+    if (args.length < 2) {
+        return ctx.reply('❌ Format: /updateroomcount <room_id>\nContoh: /updateroomcount room123');
+    }
+
+    const roomId = args[1];
+
+    try {
+        const newCount = await db.updateRoomMemberCountReal(roomId);
+        
+        if (newCount !== null) {
+            await ctx.reply(`✅ Jumlah member room \`${roomId}\` berhasil diupdate menjadi ${newCount}`);
+        } else {
+            await ctx.reply('❌ Room tidak ditemukan.');
+        }
+    } catch (error) {
+        console.error("Error updating room count:", error);
+        await ctx.reply("❌ Terjadi kesalahan saat update jumlah member room.");
+    }
+};
+
+// Command: /allroomstats
+const allRoomStats = async (ctx) => {
+    if (!isAdmin(ctx.from.id)) {
+        return ctx.reply('❌ Anda tidak memiliki akses admin.');
+    }
+
+    try {
+        const roomsSnapshot = await db.collection('rooms').once('value');
+        const rooms = roomsSnapshot.val();
+        
+        if (!rooms) {
+            return ctx.reply('📋 Tidak ada room yang tersedia.');
+        }
+
+        let message = '📊 **Statistik Semua Room:**\n\n';
+        let totalRooms = 0;
+        let totalMembers = 0;
+        let totalVIPMembers = 0;
+        let unsyncedRooms = 0;
+
+        for (const [roomId, roomData] of Object.entries(rooms)) {
+            const stats = await db.getRoomStatistics(roomId);
+            if (stats) {
+                totalRooms++;
+                totalMembers += stats.actualMembers;
+                totalVIPMembers += stats.vipMembers;
+                
+                if (stats.actualMembers !== stats.storedMembers) {
+                    unsyncedRooms++;
+                }
+
+                const syncStatus = stats.actualMembers === stats.storedMembers ? '✅' : '⚠️';
+                const vipBadge = stats.isVIP ? '👑' : '';
+                
+                message += `${syncStatus} ${vipBadge}${stats.roomName}\n`;
+                message += `   👥 ${stats.actualMembers}/${stats.maxMembers} | 👑 ${stats.vipMembers}\n\n`;
+            }
+        }
+
+        message += `📈 **Ringkasan:**\n` +
+            `🏠 Total Room: ${totalRooms}\n` +
+            `👥 Total Member: ${totalMembers}\n` +
+            `👑 Total VIP: ${totalVIPMembers}\n` +
+            `⚠️ Room Tidak Sinkron: ${unsyncedRooms}`;
+
+        await ctx.reply(message, { parse_mode: 'Markdown' });
+    } catch (error) {
+        console.error("Error getting all room stats:", error);
+        await ctx.reply("❌ Terjadi kesalahan saat mengambil statistik semua room.");
+    }
 };
 
 // Export all functions
@@ -159,5 +278,8 @@ module.exports = {
     listVIP,
     removeVIP,
     adminHelp,
+    roomStats,
+    updateRoomCount,
+    allRoomStats,
     isAdmin
 }; 

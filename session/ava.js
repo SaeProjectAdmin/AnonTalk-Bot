@@ -3,7 +3,6 @@ const db = require('../db'); // Firebase DB instance
 const lang = require('../lang');
 
 module.exports = async (ctx, user) => {
-    const dbuser = db.collection('users');
     const userava = user.ava || '👤';
 
     try {
@@ -24,7 +23,12 @@ module.exports = async (ctx, user) => {
 
         if (input === '/drop') {
             // Set user's avatar to default and reset the session
-            await dbuser.child(ctx.chat.id).update({ ava: '', session: '' });
+            const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+            const userData = userSnapshot.val();
+            if (userData) {
+                const userKey = Object.keys(userData)[0];
+                await db.adminDb.ref('users').child(userKey).update({ ava: '', session: '' });
+            }
 
             // Send confirmation message to the user
             await ctx.telegram.sendMessage(
@@ -35,7 +39,7 @@ module.exports = async (ctx, user) => {
 
             if (user.room !== '') {
                 // Notify others in the room of the avatar reset
-                const userInRoomSnapshot = await dbuser.orderByChild('room').equalTo(user.room).once('value');
+                const userInRoomSnapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(user.room).once('value');
                 const userInRoom = userInRoomSnapshot.val();
 
                 for (const key in userInRoom) {
@@ -50,7 +54,12 @@ module.exports = async (ctx, user) => {
 
         } else if (input.length <= maxLength && isValidAvatar(input)) {
             // Update user's avatar and reset the session
-            await dbuser.child(ctx.chat.id).update({ ava: input, session: '' });
+            const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+            const userData = userSnapshot.val();
+            if (userData) {
+                const userKey = Object.keys(userData)[0];
+                await db.adminDb.ref('users').child(userKey).update({ ava: input, session: '' });
+            }
 
             // Send confirmation message to the user
             let confirmMessage = lang(user.lang, input).change_ava;
@@ -63,7 +72,7 @@ module.exports = async (ctx, user) => {
 
             if (user.room !== '') {
                 // Notify others in the room of the avatar change
-                const userInRoomSnapshot = await dbuser.orderByChild('room').equalTo(user.room).once('value');
+                const userInRoomSnapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(user.room).once('value');
                 const userInRoom = userInRoomSnapshot.val();
 
                 for (const key in userInRoom) {

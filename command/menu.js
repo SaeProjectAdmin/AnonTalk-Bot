@@ -268,7 +268,7 @@ const autoRegisterUser = async (ctx) => {
                 last_activity: new Date().toISOString()
             };
             
-            await db.collection('users').push(newUser);
+            await db.adminDb.ref('users').push(newUser);
             console.log(`✅ Auto-registered user ${ctx.chat.id} with Indonesian language`);
         }
     } catch (error) {

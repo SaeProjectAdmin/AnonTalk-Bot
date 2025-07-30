@@ -304,7 +304,7 @@ ${randomRoom.vip ? '👑 **VIP Room**' : ''}
         
         // Actually join the room (call the join function)
         const joinCommand = require('./join');
-        await joinCommand.handleRandomRoomCallback(ctx);
+        await joinCommand(ctx);
         
         // Update the message after joining
         await ctx.editMessageText(randomText, {
@@ -340,16 +340,15 @@ const handleLanguageChange = async (ctx, lang) => {
     
     // Save language preference to database (use full language name)
     try {
-        const dbuser = db.collection('users');
-        await dbuser.doc(ctx.chat.id.toString()).set({
-            lang: langName, // Save full language name instead of short code
-            userid: ctx.chat.id,
-            username: ctx.from.username || '',
-            first_name: ctx.from.first_name || '',
-            last_name: ctx.from.last_name || '',
-            registered_at: new Date().toISOString(),
-            lastLangChange: new Date().toISOString()
-        }, { merge: true });
+        const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+        const userData = userSnapshot.val();
+        if (userData) {
+            const userKey = Object.keys(userData)[0];
+            await db.adminDb.ref('users').child(userKey).update({
+                lang: langName, // Save full language name instead of short code
+                lastLangChange: new Date().toISOString()
+            });
+        }
     } catch (dbError) {
         console.log('Language save skipped:', dbError.message);
     }

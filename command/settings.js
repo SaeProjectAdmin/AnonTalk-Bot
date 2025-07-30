@@ -14,7 +14,12 @@ const setLang = async (ctx) => {
         }
 
         // Update user session to 'lang'
-        await db.collection('users').child(user.userid).update({ session: 'lang' });
+        const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+        const userData = userSnapshot.val();
+        if (userData) {
+            const userKey = Object.keys(userData)[0];
+            await db.adminDb.ref('users').child(userKey).update({ session: 'lang' });
+        }
 
         // Create inline keyboard for language selection with current selection indicator
         const keyboard = [
@@ -76,10 +81,15 @@ const handleLanguageCallback = async (ctx, selectedLang) => {
         }
 
         // Update user's language
-        await db.collection('users').child(user.userid).update({ 
-            lang: newLang,
-            session: '' // Clear session
-        });
+        const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+        const userData = userSnapshot.val();
+        if (userData) {
+            const userKey = Object.keys(userData)[0];
+            await db.adminDb.ref('users').child(userKey).update({ 
+                lang: newLang,
+                session: '' // Clear session
+            });
+        }
 
         // Send confirmation message with updated language info
         const confirmMessage = {
@@ -109,7 +119,12 @@ const setAva = async (ctx) => {
         }
 
         // Update user session to 'ava'
-        await db.collection('users').child(user.userid).update({ session: 'ava' });
+        const userSnapshot = await db.adminDb.ref('users').orderByChild('userid').equalTo(ctx.chat.id).once('value');
+        const userData = userSnapshot.val();
+        if (userData) {
+            const userKey = Object.keys(userData)[0];
+            await db.adminDb.ref('users').child(userKey).update({ session: 'ava' });
+        }
 
         let avatarMessage = lang(user.lang, user.ava).current_ava;
 

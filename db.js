@@ -211,11 +211,72 @@ async function updateRoomMemberCount(roomId, increment = 1) {
     }
 }
 
+// Update room member count based on actual users in room
+async function updateRoomMemberCountReal(roomId) {
+    try {
+        // Count actual users in the room
+        const roomUsersSnapshot = await adminDb.ref('users').orderByChild('room').equalTo(roomId).once('value');
+        const roomUsers = roomUsersSnapshot.val();
+        const actualMemberCount = roomUsers ? Object.keys(roomUsers).length : 0;
+        
+        // Update room member count
+        const roomRef = adminDb.ref('rooms').child(roomId);
+        await roomRef.update({ member: actualMemberCount });
+        
+        return actualMemberCount;
+    } catch (error) {
+        console.error('Error updating room member count real:', error);
+        return 0;
+    }
+}
+
+// Get room statistics
+async function getRoomStatistics(roomId) {
+    try {
+        const roomSnapshot = await adminDb.ref('rooms').child(roomId).once('value');
+        const roomData = roomSnapshot.val();
+        
+        if (!roomData) {
+            return null;
+        }
+        
+        // Count actual users in the room
+        const roomUsersSnapshot = await adminDb.ref('users').orderByChild('room').equalTo(roomId).once('value');
+        const roomUsers = roomUsersSnapshot.val();
+        const actualMemberCount = roomUsers ? Object.keys(roomUsers).length : 0;
+        
+        // Count VIP users in the room
+        let vipCount = 0;
+        if (roomUsers) {
+            for (const userId of Object.keys(roomUsers)) {
+                const isVIP = await isUserVIP(roomUsers[userId].userid);
+                if (isVIP) vipCount++;
+            }
+        }
+        
+        return {
+            roomId,
+            roomName: roomData.description || 'Unknown Room',
+            maxMembers: roomData.maxMember || 20,
+            actualMembers: actualMemberCount,
+            storedMembers: roomData.member || 0,
+            vipMembers: vipCount,
+            isVIP: roomData.vip || false,
+            language: roomData.lang || 'Unknown'
+        };
+    } catch (error) {
+        console.error('Error getting room statistics:', error);
+        return null;
+    }
+}
+
 // Update user's last activity and current room
 async function updateUserActivity(chatId, roomId = null) {
     try {
-        const user = await getUserByChatId(chatId);
-        if (user) {
+        const userSnapshot = await adminDb.ref('users').orderByChild('userid').equalTo(chatId).once('value');
+        const userData = userSnapshot.val();
+        if (userData) {
+            const userKey = Object.keys(userData)[0];
             const updates = {
                 lastActivity: Date.now()
             };
@@ -224,7 +285,7 @@ async function updateUserActivity(chatId, roomId = null) {
                 updates.currentRoom = roomId;
             }
             
-            await adminDb.ref('users').child(user.userid).update(updates);
+            await adminDb.ref('users').child(userKey).update(updates);
         }
     } catch (error) {
         console.error('Error updating user activity:', error);
@@ -443,12 +504,15 @@ module.exports = {
     close,
     isConnected,
     clientDb,
+    adminDb,
     getUserByChatId,
     isUserVIP,
     setUserVIP,
     getRoomsByLanguage,
     getSimpleRoomNames,
     updateRoomMemberCount,
+    updateRoomMemberCountReal,
+    getRoomStatistics,
     updateUserActivity,
     autoKickInactiveUsers,
     createCustomRoom,
