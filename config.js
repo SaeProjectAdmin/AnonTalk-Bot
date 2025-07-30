@@ -15,7 +15,7 @@ module.exports = {
         })(),
     
     // Database configuration
-    DB_URL: process.env.DB_URL || "",
+    DB_URL: process.env.DB_URL || "https://anontalk-bot-5f3f1.firebaseio.com",
     
     // Bot configuration
     BOT_TOKEN: process.env.BOT_TOKEN || "",
@@ -29,11 +29,5 @@ module.exports = {
     WEBHOOK_URL: process.env.WEBHOOK_URL || "",
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || "anontalk-bot-5f3f1",
     
-    // VIP configuration
-    VIP_ENABLED: process.env.VIP_ENABLED !== "false", // Default to true
-    VIP_PRICES: {
-        daily: process.env.VIP_DAILY_PRICE || 5000,
-        weekly: process.env.VIP_WEEKLY_PRICE || 25000,
-        monthly: process.env.VIP_MONTHLY_PRICE || 75000
-    }
+
 };

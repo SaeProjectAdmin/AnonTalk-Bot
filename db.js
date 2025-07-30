@@ -6,25 +6,43 @@ const cfg = require('./config');
 
 // Initialize Firebase Admin SDK
 let adminApp;
-if (cfg.FIREBASE_CREDENTIALS) {
-    adminApp = admin.initializeApp({
-        credential: admin.credential.cert(cfg.FIREBASE_CREDENTIALS),
-        databaseURL: cfg.DB_URL
-    });
-} else {
-    // Use default credentials (for Firebase App Hosting)
-    adminApp = admin.initializeApp({
-        databaseURL: cfg.DB_URL
-    });
+try {
+    if (cfg.FIREBASE_CREDENTIALS) {
+        adminApp = admin.initializeApp({
+            credential: admin.credential.cert(cfg.FIREBASE_CREDENTIALS),
+            databaseURL: cfg.DB_URL
+        });
+    } else {
+        // Use default credentials (for Firebase App Hosting)
+        adminApp = admin.initializeApp({
+            databaseURL: cfg.DB_URL
+        });
+    }
+} catch (error) {
+    console.log('⚠️ Firebase Admin SDK initialization failed:', error.message);
+    throw error; // Re-throw as this is critical for the bot to function
 }
 
 // Initialize Firebase Client SDK
-const app = initializeApp({
-    databaseURL: cfg.DB_URL // You can include more config parameters here if needed
-});
-const clientDb = getDatabase(app); // Get the client database instance
+let app, clientDb;
+try {
+    app = initializeApp({
+        databaseURL: cfg.DB_URL,
+        projectId: cfg.FIREBASE_PROJECT_ID
+    });
+    clientDb = getDatabase(app); // Get the client database instance
+} catch (error) {
+    console.log('⚠️ Firebase Client SDK initialization failed:', error.message);
+    // Continue with admin SDK only
+}
 
-let adminDb = admin.database(); // Get the admin database instance
+let adminDb;
+try {
+    adminDb = admin.database(adminApp); // Get the admin database instance
+} catch (error) {
+    console.log('⚠️ Firebase Admin Database initialization failed:', error.message);
+    throw error; // Re-throw as this is critical for the bot to function
+}
 
 // Room categories with icons
 const ROOM_CATEGORIES = {
@@ -36,7 +54,7 @@ const ROOM_CATEGORIES = {
     'tech': { icon: '💻', name: { 'Indonesia': 'Teknologi', 'English': 'Tech', 'Jawa': 'Teknologi' } },
     'sports': { icon: '⚽', name: { 'Indonesia': 'Olahraga', 'English': 'Sports', 'Jawa': 'Olahraga' } },
     'food': { icon: '🍕', name: { 'Indonesia': 'Makanan', 'English': 'Food', 'Jawa': 'Panganan' } },
-    'vip': { icon: '👑', name: { 'Indonesia': 'VIP', 'English': 'VIP', 'Jawa': 'VIP' } }
+
 };
 
 // Supported languages
@@ -51,8 +69,7 @@ function init(callback) {
             // Create 24 default rooms (8 per language)
             SUPPORTED_LANGUAGES.forEach(lang => {
                 Object.keys(ROOM_CATEGORIES).forEach(category => {
-                    const isVIP = category === 'vip';
-                    const maxMembers = isVIP ? 30 : 20;
+                    const maxMembers = 20;
                     
                     rooms.push({
                         room: uniqueID(),
@@ -61,7 +78,7 @@ function init(callback) {
                         member: 0,
                         maxMember: maxMembers,
                         private: false,
-                        vip: isVIP,
+                        vip: false,
                         createdAt: Date.now(),
                         description: `${ROOM_CATEGORIES[category].icon} ${ROOM_CATEGORIES[category].name[lang]} - ${lang}`
                     });
@@ -85,12 +102,7 @@ function init(callback) {
         }
     });
 
-    // Initialize VIP users collection
-    adminDb.ref('vip_users').once('value', (snapshot) => {
-        if (!snapshot.exists()) {
-            console.log('VIP users collection initialized');
-        }
-    });
+
 
     // Initialize room categories
     adminDb.ref('categories').once('value', (snapshot) => {

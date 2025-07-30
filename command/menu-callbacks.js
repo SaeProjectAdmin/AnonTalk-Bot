@@ -25,9 +25,7 @@ const handleMenuCallbacks = async (ctx) => {
                 await menu.showLanguageMenu(ctx);
                 break;
                 
-            case 'menu_vip':
-                await menu.showVipMenu(ctx);
-                break;
+
                 
             case 'menu_help':
                 await menu.showHelpMenu(ctx);
@@ -69,20 +67,7 @@ const handleMenuCallbacks = async (ctx) => {
                 await handleLanguageChange(ctx, callbackData.replace('lang_', ''));
                 break;
                 
-            // VIP callbacks
-            case 'vip_daily':
-            case 'vip_weekly':
-            case 'vip_monthly':
-                await handleVipPurchase(ctx, callbackData.replace('vip_', ''));
-                break;
-                
-            case 'vip_features':
-                await handleVipFeatures(ctx);
-                break;
-                
-            case 'vip_pricing':
-                await handleVipPricing(ctx);
-                break;
+
                 
             // Help callbacks
             case 'help_commands':

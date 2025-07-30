@@ -11,15 +11,11 @@ const menuKeyboards = {
                 { text: '🌍 Language', callback_data: 'menu_lang' }
             ],
             [
-                { text: '💎 VIP Info', callback_data: 'menu_vip' },
-                { text: '📋 Help', callback_data: 'menu_help' }
+                { text: '📋 Help', callback_data: 'menu_help' },
+                { text: '🏆 Rooms List', callback_data: 'menu_rooms' }
             ],
             [
-                { text: '🏆 Rooms List', callback_data: 'menu_rooms' },
-                { text: '⚙️ Settings', callback_data: 'menu_settings' }
-            ],
-            [
-                { text: '💰 Donate', callback_data: 'menu_donate' },
+                { text: '⚙️ Settings', callback_data: 'menu_settings' },
                 { text: '📊 Stats', callback_data: 'menu_stats' }
             ]
         ]
@@ -69,25 +65,7 @@ const menuKeyboards = {
         ]
     },
 
-    // VIP menu
-    vip: {
-        inline_keyboard: [
-            [
-                { text: '💎 Daily VIP', callback_data: 'vip_daily' },
-                { text: '💎 Weekly VIP', callback_data: 'vip_weekly' }
-            ],
-            [
-                { text: '💎 Monthly VIP', callback_data: 'vip_monthly' }
-            ],
-            [
-                { text: '✨ VIP Features', callback_data: 'vip_features' },
-                { text: '💰 VIP Pricing', callback_data: 'vip_pricing' }
-            ],
-            [
-                { text: '🔙 Back to Menu', callback_data: 'menu_main' }
-            ]
-        ]
-    },
+
 
     // Help menu
     help: {

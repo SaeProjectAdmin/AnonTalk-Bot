@@ -105,19 +105,7 @@ const setAva = async (ctx) => {
         // Update user session to 'ava'
         await db.collection('users').child(ctx.chat.id).update({ session: 'ava' });
 
-        // Check if user is VIP
-        const isVIP = await db.isUserVIP(ctx.chat.id);
-        
         let avatarMessage = lang(user.lang, user.ava).current_ava;
-        
-        if (isVIP) {
-            const vipMessages = {
-                'Indonesia': '\n\n💎 VIP Avatar: Anda dapat menggunakan avatar tanpa batas karakter!',
-                'English': '\n\n💎 VIP Avatar: You can use avatars with unlimited characters!',
-                'Jawa': '\n\n💎 VIP Avatar: Sampeyan bisa nggunakake avatar tanpa wates karakter!'
-            };
-            avatarMessage += vipMessages[user.lang] || vipMessages['English'];
-        }
 
         // Send the current avatar message
         await ctx.telegram.sendMessage(

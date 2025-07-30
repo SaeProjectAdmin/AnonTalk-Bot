@@ -206,15 +206,7 @@ async function initializeBot() {
             }
         });
         
-        // VIP command
-        bot.command('vip', async (ctx) => {
-            try {
-                await menu.showVipMenu(ctx);
-            } catch (error) {
-                console.error('Error in vip command:', error);
-                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
-            }
-        });
+
         
         // Test command
         bot.command('test', (ctx) => {
