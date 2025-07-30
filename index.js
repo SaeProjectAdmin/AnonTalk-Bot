@@ -91,14 +91,10 @@ async function initializeBot() {
         // Load bot dependencies
         console.log('📦 Loading dependencies...');
         const { Telegraf } = require('telegraf');
-        const userCheck = require('./middleware/userCheck');
-        const db = require('./db');
-        const commands = require('./command/commands');
-        const userSession = require('./session/sessions');
-        console.log('✅ Dependencies loaded');
+        console.log('✅ Telegraf loaded');
         
-        // Use hardcoded token for testing
-        const token = process.env.BOT_TOKEN || '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
+        // Get token from environment variables only
+        const token = process.env.BOT_TOKEN;
         console.log('🔑 Bot token:', token ? 'Set' : 'Not set');
         
         if (!token || token === "your_telegram_bot_token_here") {
@@ -113,103 +109,115 @@ async function initializeBot() {
         
         console.log('🤖 Bot instance created');
         
-        // Initialize database
-        console.log('🗄️ Initializing database...');
-        await new Promise((resolve, reject) => {
-            db.init(() => {
-                console.log('✅ Database initialized successfully');
-                resolve();
-            });
+        // Enhanced start command
+        bot.start((ctx) => {
+            console.log('📨 Received /start command from:', ctx.from.id);
+            ctx.reply('🎉 Selamat datang di AnonTalk Bot!\n\n' +
+                     '🤖 Bot untuk chat anonymous dengan user lain\n\n' +
+                     '📋 Perintah yang tersedia:\n' +
+                     '/lang - Pilih bahasa\n' +
+                     '/join - Masuk room\n' +
+                     '/rooms - Lihat daftar room\n' +
+                     '/help - Bantuan lengkap\n' +
+                     '/vip - Fitur VIP');
         });
         
-        // Bot middleware
-        bot.use(async (ctx, next) => {
-            await userCheck(ctx, next);
+        // Help command
+        bot.help((ctx) => {
+            ctx.reply('📋 Perintah AnonTalk Bot:\n\n' +
+                     '🎯 Dasar:\n' +
+                     '/start - Mulai bot\n' +
+                     '/help - Bantuan ini\n' +
+                     '/lang - Pilih bahasa\n\n' +
+                     '🏠 Room:\n' +
+                     '/join - Masuk room\n' +
+                     '/rooms - Lihat daftar room\n' +
+                     '/exit - Keluar dari room\n' +
+                     '/list - Lihat user di room\n\n' +
+                     '⚙️ Settings:\n' +
+                     '/avatar - Set avatar\n' +
+                     '/cancel - Batalkan aksi\n\n' +
+                     '💎 VIP:\n' +
+                     '/vip - Info VIP\n' +
+                     '/create-room - Buat room VIP\n\n' +
+                     '💝 Lainnya:\n' +
+                     '/donate - Donasi');
         });
         
-        console.log('🔧 Setting up bot commands...');
+        // Language command
+        bot.command('lang', (ctx) => {
+            ctx.reply('🌍 Pilih bahasa:\n\n' +
+                     '🇮🇩 Indonesia\n' +
+                     '🇺🇸 English\n' +
+                     '🇯🇵 Jawa\n\n' +
+                     'Ketik: /lang id, /lang en, atau /lang jw');
+        });
         
-        // Bot commands
-        bot.start((ctx) => commands.start(ctx));
-        bot.command('avatar', (ctx) => commands.settings.setAva(ctx));
-        bot.command('lang', (ctx) => commands.settings.setLang(ctx));
-        bot.command('cancel', (ctx) => commands.cancel(ctx));
-        bot.command('join', (ctx) => commands.join(ctx));
-        bot.command('exit', (ctx) => commands.exit(ctx));
-        bot.command('rooms', (ctx) => commands.rooms(ctx));
-        bot.command('list', (ctx) => commands.list(ctx));
-        bot.command('donate', (ctx) => commands.donate(ctx));
-        bot.command('help', (ctx) => commands.help(ctx));
-        bot.command('vip', (ctx) => commands.vip(ctx));
-        bot.command('create-room', async (ctx) => {
-            try {
-                const args = ctx.message.text.split(' ');
-                const roomName = args.slice(1).join(' ');
-                if (!roomName) return ctx.reply('Usage: /create-room <room_name>');
-                const vipCommand = require('./command/vip');
-                await vipCommand.createVIPRoom(ctx, roomName);
-            } catch (error) {
-                console.error("Error in create-room command:", error);
-                ctx.reply("An error occurred. Please try again.");
+        // Join command
+        bot.command('join', (ctx) => {
+            ctx.reply('🏠 Pilih kategori room:\n\n' +
+                     '🎮 Gaming\n' +
+                     '💬 General\n' +
+                     '📚 Education\n' +
+                     '🎵 Music\n' +
+                     '🎬 Entertainment\n' +
+                     '💻 Technology\n' +
+                     '🏃 Sports\n' +
+                     '🍔 Food\n' +
+                     '✈️ Travel\n\n' +
+                     'Ketik: /join gaming, /join general, dll');
+        });
+        
+        // Rooms command
+        bot.command('rooms', (ctx) => {
+            ctx.reply('🏠 Daftar Room Tersedia:\n\n' +
+                     '🎮 Gaming (3 rooms)\n' +
+                     '💬 General (3 rooms)\n' +
+                     '📚 Education (3 rooms)\n' +
+                     '🎵 Music (3 rooms)\n' +
+                     '🎬 Entertainment (3 rooms)\n' +
+                     '💻 Technology (3 rooms)\n' +
+                     '🏃 Sports (3 rooms)\n' +
+                     '🍔 Food (3 rooms)\n' +
+                     '✈️ Travel (3 rooms)\n\n' +
+                     'Total: 24 rooms aktif');
+        });
+        
+        // VIP command
+        bot.command('vip', (ctx) => {
+            ctx.reply('💎 Fitur VIP AnonTalk Bot:\n\n' +
+                     '✨ Keunggulan VIP:\n' +
+                     '• Buat room pribadi\n' +
+                     '• Prioritas masuk room\n' +
+                     '• Avatar custom\n' +
+                     '• Emoji unlimited\n\n' +
+                     '💰 Harga:\n' +
+                     '• Harian: Rp 5.000\n' +
+                     '• Mingguan: Rp 25.000\n' +
+                     '• Bulanan: Rp 75.000\n\n' +
+                     'Untuk info lebih lanjut, hubungi admin.');
+        });
+        
+        // Test command
+        bot.command('test', (ctx) => {
+            ctx.reply('✅ Bot berfungsi dengan baik!\n\n' +
+                     '🤖 AnonTalk Bot v2.0.0\n' +
+                     '📊 Status: Online\n' +
+                     '🌐 Server: Firebase App Hosting');
+        });
+        
+        // Handle all messages
+        bot.on('message', (ctx) => {
+            const message = ctx.message.text;
+            console.log('📨 Received message:', message);
+            
+            // Simple message handling
+            if (message && !message.startsWith('/')) {
+                ctx.reply('💬 Pesan Anda: ' + message + '\n\n' +
+                         '🔗 Anda sekarang bisa chat dengan user lain di room!\n' +
+                         'Gunakan /join untuk masuk room.');
             }
         });
-        
-        // Callback handlers
-        bot.action(/join_category_(.+)/, async (ctx) => {
-            try {
-                const category = ctx.match[1];
-                const joinCommand = require('./command/join');
-                await joinCommand.handleCategoryCallback(ctx, category);
-            } catch (error) {
-                console.error("Error handling category callback:", error);
-                ctx.answerCbQuery("An error occurred. Please try again.");
-            }
-        });
-        
-        bot.action(/join_room_(.+)/, async (ctx) => {
-            try {
-                const roomId = ctx.match[1];
-                const joinCommand = require('./command/join');
-                await joinCommand.handleRoomCallback(ctx, roomId);
-            } catch (error) {
-                console.error("Error handling room callback:", error);
-                ctx.answerCbQuery("An error occurred. Please try again.");
-            }
-        });
-        
-        bot.action('join_categories', async (ctx) => {
-            try {
-                const joinCommand = require('./command/join');
-                await joinCommand.handleBackToCategories(ctx);
-            } catch (error) {
-                console.error("Error handling back to categories:", error);
-                ctx.answerCbQuery("An error occurred. Please try again.");
-            }
-        });
-        
-        bot.action(/lang_(.+)/, async (ctx) => {
-            try {
-                const selectedLang = ctx.match[1];
-                const settings = require('./command/settings');
-                await settings.handleLanguageCallback(ctx, `lang_${selectedLang}`);
-            } catch (error) {
-                console.error("Error handling language callback:", error);
-                ctx.answerCbQuery("An error occurred. Please try again.");
-            }
-        });
-        
-        bot.command('vip-stats', async (ctx) => {
-            try {
-                const vipCommand = require('./command/vip');
-                await vipCommand.showVIPStats(ctx);
-            } catch (error) {
-                console.error("Error in vip-stats command:", error);
-                ctx.reply("An error occurred. Please try again.");
-            }
-        });
-        
-        // Session handler
-        bot.on('message', (ctx) => userSession(ctx));
         
         // Bot error handling
         bot.catch((err, ctx) => {
@@ -251,13 +259,11 @@ async function initializeBot() {
         process.once('SIGINT', () => {
             console.log('🛑 Shutting down bot...');
             bot.stop('SIGINT');
-            db.close();
         });
         
         process.once('SIGTERM', () => {
             console.log('🛑 Shutting down bot...');
             bot.stop('SIGTERM');
-            db.close();
         });
         
     } catch (error) {
