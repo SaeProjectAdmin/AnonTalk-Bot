@@ -28,11 +28,27 @@ module.exports = async (ctx) => {
             }
         } else if (user.room !== '') {
             // User is in a room, update activity and handle media messages
+            console.log(`🏠 User ${user.userid} is in room ${user.room}, processing media`);
             await db.updateUserActivity(ctx.chat.id, user.room);
             await mediaHandler.handleMedia(ctx, user);
         } else {
-            // User is not in a room, show invalid command message
-            await ctx.telegram.sendMessage(ctx.chat.id, lang(user.lang).invalid_command);
+            // User is not in a room
+            const hasMedia = ctx.message.photo || ctx.message.video || ctx.message.video_note || 
+                           ctx.message.sticker || ctx.message.voice || ctx.message.audio || 
+                           ctx.message.document || ctx.message.contact || ctx.message.location || 
+                           ctx.message.venue;
+            
+            console.log(`🚫 User ${user.userid} not in room. Has media: ${hasMedia}`);
+            
+            if (hasMedia) {
+                // Handle media even if not in room (will show "not in room" message)
+                console.log(`📱 Processing media for user not in room`);
+                await mediaHandler.handleMedia(ctx, user);
+            } else if (ctx.message.text) {
+                // Show invalid command message only for text messages
+                console.log(`💬 Showing invalid command message for text`);
+                await ctx.telegram.sendMessage(ctx.chat.id, lang(user.lang).invalid_command);
+            }
         }
     } catch (err) {
         console.error('Error processing message:', err);

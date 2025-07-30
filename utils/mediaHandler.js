@@ -156,16 +156,20 @@ class MediaHandler {
     async handleMedia(ctx, user) {
         try {
             const messageType = this.getMessageType(ctx);
+            console.log(`📱 Processing media type: ${messageType} for user ${user.userid}`);
             
             // Check if content is inappropriate
             if (this.isInappropriateContent(ctx, messageType)) {
+                console.log(`🚫 Inappropriate content detected for type: ${messageType}`);
                 return await this.handleInappropriateContent(ctx, user, messageType);
             }
             
             if (!this.supportedTypes[messageType]) {
+                console.log(`❌ Unsupported media type: ${messageType}`);
                 return this.handleUnsupportedMedia(ctx, user);
             }
 
+            console.log(`✅ Processing supported media type: ${messageType}`);
             switch (messageType) {
                 case 'text':
                     return this.handleText(ctx, user);
@@ -197,6 +201,20 @@ class MediaHandler {
     }
 
     getMessageType(ctx) {
+        console.log(`🔍 Checking message type for message:`, {
+            hasText: !!ctx.message.text,
+            hasPhoto: !!ctx.message.photo,
+            hasVideo: !!ctx.message.video,
+            hasVideoNote: !!ctx.message.video_note,
+            hasSticker: !!ctx.message.sticker,
+            hasVoice: !!ctx.message.voice,
+            hasAudio: !!ctx.message.audio,
+            hasDocument: !!ctx.message.document,
+            hasContact: !!ctx.message.contact,
+            hasLocation: !!ctx.message.location,
+            hasVenue: !!ctx.message.venue
+        });
+        
         if (ctx.message.text) return 'text';
         if (ctx.message.photo) return 'photo';
         if (ctx.message.video) return 'video';
@@ -266,34 +284,46 @@ class MediaHandler {
     }
 
     async handlePhoto(ctx, user) {
+        console.log(`📷 Handling photo for user ${user.userid} in room ${user.room}`);
+        
         if (!user.room) {
+            console.log(`❌ User ${user.userid} not in room`);
             return ctx.reply(lang(user.lang).not_in_room);
         }
 
         const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        console.log(`📷 Found ${usersInRoom.length} users in room to send photo to`);
+        
         const caption = ctx.message.caption ? `${user.ava || '👤'}: ${ctx.message.caption}` : `${user.ava || '👤'}: 📷 Photo`;
         
         for (const roomUser of usersInRoom) {
             try {
+                console.log(`📷 Sending photo to user ${roomUser.userid}`);
                 await ctx.telegram.sendPhoto(roomUser.userid, ctx.message.photo[0].file_id, {
                     caption: caption
                 });
+                console.log(`✅ Photo sent successfully to user ${roomUser.userid}`);
             } catch (error) {
-                console.error(`Error sending photo to user ${roomUser.userid}:`, error);
+                console.error(`❌ Error sending photo to user ${roomUser.userid}:`, error);
             }
         }
     }
 
     async handleVideo(ctx, user, type) {
+        console.log(`🎥 Handling ${type} for user ${user.userid} in room ${user.room}`);
+        
         if (!user.room) {
+            console.log(`❌ User ${user.userid} not in room`);
             return ctx.reply(lang(user.lang).not_in_room);
         }
 
         const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
         const isVIP = await db.isUserVIP(ctx.chat.id);
+        console.log(`🎥 Found ${usersInRoom.length} users in room to send ${type} to. User VIP: ${isVIP}`);
         
         // Check file size for non-VIP users
         if (!isVIP && ctx.message.video && ctx.message.video.file_size > 50 * 1024 * 1024) { // 50MB limit
+            console.log(`❌ Video too large for non-VIP user: ${ctx.message.video.file_size} bytes`);
             return ctx.reply('Video too large. Upgrade to VIP for unlimited video size.');
         }
 
@@ -301,6 +331,7 @@ class MediaHandler {
         
         for (const roomUser of usersInRoom) {
             try {
+                console.log(`🎥 Sending ${type} to user ${roomUser.userid}`);
                 if (type === 'video_note') {
                     await ctx.telegram.sendVideoNote(roomUser.userid, ctx.message.video_note.file_id);
                 } else {
@@ -308,38 +339,51 @@ class MediaHandler {
                         caption: caption
                     });
                 }
+                console.log(`✅ ${type} sent successfully to user ${roomUser.userid}`);
             } catch (error) {
-                console.error(`Error sending video to user ${roomUser.userid}:`, error);
+                console.error(`❌ Error sending ${type} to user ${roomUser.userid}:`, error);
             }
         }
     }
 
     async handleSticker(ctx, user) {
+        console.log(`😀 Handling sticker for user ${user.userid} in room ${user.room}`);
+        
         if (!user.room) {
+            console.log(`❌ User ${user.userid} not in room`);
             return ctx.reply(lang(user.lang).not_in_room);
         }
 
         const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        console.log(`😀 Found ${usersInRoom.length} users in room to send sticker to`);
         
         for (const roomUser of usersInRoom) {
             try {
+                console.log(`😀 Sending sticker to user ${roomUser.userid}`);
                 await ctx.telegram.sendSticker(roomUser.userid, ctx.message.sticker.file_id);
+                console.log(`✅ Sticker sent successfully to user ${roomUser.userid}`);
             } catch (error) {
-                console.error(`Error sending sticker to user ${roomUser.userid}:`, error);
+                console.error(`❌ Error sending sticker to user ${roomUser.userid}:`, error);
             }
         }
     }
 
     async handleAudio(ctx, user, type) {
+        console.log(`🎵 Handling ${type} for user ${user.userid} in room ${user.room}`);
+        
         if (!user.room) {
+            console.log(`❌ User ${user.userid} not in room`);
             return ctx.reply(lang(user.lang).not_in_room);
         }
 
         const usersInRoom = await this.getUsersInRoom(user.room, user.userid);
+        console.log(`🎵 Found ${usersInRoom.length} users in room to send ${type} to`);
+        
         const caption = ctx.message.caption ? `${user.ava || '👤'}: ${ctx.message.caption}` : `${user.ava || '👤'}: ${type === 'voice' ? '🎤 Voice Message' : '🎵 Audio'}`;
         
         for (const roomUser of usersInRoom) {
             try {
+                console.log(`🎵 Sending ${type} to user ${roomUser.userid}`);
                 if (type === 'voice') {
                     await ctx.telegram.sendVoice(roomUser.userid, ctx.message.voice.file_id, {
                         caption: caption
@@ -349,8 +393,9 @@ class MediaHandler {
                         caption: caption
                     });
                 }
+                console.log(`✅ ${type} sent successfully to user ${roomUser.userid}`);
             } catch (error) {
-                console.error(`Error sending audio to user ${roomUser.userid}:`, error);
+                console.error(`❌ Error sending ${type} to user ${roomUser.userid}:`, error);
             }
         }
     }
@@ -452,14 +497,18 @@ class MediaHandler {
 
     async getUsersInRoom(roomId, excludeUserId) {
         try {
+            console.log(`🔍 Getting users in room: ${roomId}, excluding user: ${excludeUserId}`);
             const snapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(roomId).once('value');
             const data = snapshot.val();
             if (data) {
-                return Object.values(data).filter(user => user.userid !== excludeUserId);
+                const users = Object.values(data).filter(user => user.userid !== excludeUserId);
+                console.log(`🔍 Found ${users.length} users in room ${roomId}`);
+                return users;
             }
+            console.log(`🔍 No users found in room ${roomId}`);
             return [];
         } catch (error) {
-            console.error('Error getting users in room:', error);
+            console.error('❌ Error getting users in room:', error);
             return [];
         }
     }

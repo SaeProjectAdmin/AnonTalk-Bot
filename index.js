@@ -578,17 +578,41 @@ async function initializeBot() {
         // Handle all messages with session handler
         bot.on('message', async (ctx) => {
             const message = ctx.message.text;
-            console.log('📨 Received message:', message);
+            const hasMedia = ctx.message.photo || ctx.message.video || ctx.message.video_note || 
+                           ctx.message.sticker || ctx.message.voice || ctx.message.audio || 
+                           ctx.message.document || ctx.message.contact || ctx.message.location || 
+                           ctx.message.venue;
             
-            // Skip if it's a command
-            if (message && !message.startsWith('/')) {
-                try {
-                    // Use session handler for all message processing
-                    const sessionHandler = require('./session/sessions');
-                    await sessionHandler(ctx);
-                } catch (error) {
-                    console.error('Error in session handler:', error);
-                    // Fallback to simple reply
+            console.log('📨 Received message:', message || 'Media message');
+            console.log('📨 Message details:', {
+                hasText: !!message,
+                hasPhoto: !!ctx.message.photo,
+                hasVideo: !!ctx.message.video,
+                hasVideoNote: !!ctx.message.video_note,
+                hasSticker: !!ctx.message.sticker,
+                hasVoice: !!ctx.message.voice,
+                hasAudio: !!ctx.message.audio,
+                hasDocument: !!ctx.message.document,
+                hasContact: !!ctx.message.contact,
+                hasLocation: !!ctx.message.location,
+                hasVenue: !!ctx.message.venue
+            });
+            
+            // Skip if it's a command (only for text messages)
+            if (message && message.startsWith('/')) {
+                console.log('⚡ Skipping command message');
+                return; // Let command handlers process it
+            }
+            
+            // Process all messages (text and media) through session handler
+            try {
+                console.log('🔄 Processing message through session handler');
+                const sessionHandler = require('./session/sessions');
+                await sessionHandler(ctx);
+            } catch (error) {
+                console.error('❌ Error in session handler:', error);
+                // Fallback to simple reply for text messages only
+                if (message) {
                     ctx.reply('💬 Pesan Anda: ' + message + '\n\n' +
                              '🔗 Anda sekarang bisa chat dengan user lain di room!\n' +
                              'Gunakan /menu untuk melihat menu lengkap.');
