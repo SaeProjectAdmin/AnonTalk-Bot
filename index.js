@@ -8,6 +8,11 @@ const commands = require('./command/commands');
 const userSession = require('./session/sessions');
 
 const token = cfg.BOT_TOKEN;
+if (!token || token === "") {
+    console.error("❌ BOT_TOKEN is not set. Please set your Telegram bot token in the .env file.");
+    console.error("❌ Application cannot start without a valid bot token.");
+    process.exit(1);
+}
 const bot = new Telegraf(token);
 const app = express();
 
