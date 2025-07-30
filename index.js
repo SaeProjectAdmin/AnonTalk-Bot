@@ -1,15 +1,64 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const path = require('path');
+const compression = require('compression');
+const performanceMonitor = require('./utils/performance');
 
 const app = express();
 const port = process.env.PORT || 8080;
+
+// Enable compression for all responses
+app.use(compression());
+
+// Performance monitoring middleware
+app.use(performanceMonitor.trackRequest.bind(performanceMonitor));
+
+// Cache middleware for static responses
+const cacheMiddleware = (duration) => {
+    return (req, res, next) => {
+        res.set('Cache-Control', `public, max-age=${duration}`);
+        next();
+    };
+};
+
+// Security middleware to block access to sensitive files
+app.use((req, res, next) => {
+    const url = req.url.toLowerCase();
+    
+    // Block access to sensitive files and directories
+    const sensitivePatterns = [
+        '/.git/',
+        '/.env',
+        '/serviceaccount.json',
+        '/serviceaccount',
+        '/config.json',
+        '/package.json',
+        '/package-lock.json',
+        '/node_modules/',
+        '/.vscode/',
+        '/.idea/',
+        '/.firebaserc',
+        '/firebase.json',
+        '/database.rules.json',
+        '/storage.rules'
+    ];
+    
+    for (const pattern of sensitivePatterns) {
+        if (url.includes(pattern)) {
+            console.warn(`🚫 Blocked access to sensitive file: ${req.url}`);
+            return res.status(404).json({ error: 'Not found' });
+        }
+    }
+    
+    next();
+});
 
 // Middleware setup
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Health check endpoint for Firebase hosting
-app.get('/', (req, res) => {
+app.get('/', cacheMiddleware(60), (req, res) => {
     res.status(200).json({
         status: 'OK',
         message: 'AnonTalk Bot is running',
@@ -21,7 +70,7 @@ app.get('/', (req, res) => {
 });
 
 // Bot status endpoint
-app.get('/status', (req, res) => {
+app.get('/status', cacheMiddleware(300), (req, res) => {
     res.status(200).json({
         bot: 'AnonTalk Bot',
         status: 'Active',
@@ -39,7 +88,7 @@ app.get('/status', (req, res) => {
 });
 
 // Test endpoint for debugging
-app.get('/test', (req, res) => {
+app.get('/test', cacheMiddleware(60), (req, res) => {
     res.status(200).json({
         message: 'Test endpoint working',
         env: process.env.NODE_ENV || 'development',
@@ -58,6 +107,16 @@ app.get('/debug', (req, res) => {
     });
 });
 
+// Performance monitoring endpoint
+app.get('/performance', (req, res) => {
+    res.status(200).json({
+        server: 'AnonTalk Bot',
+        version: '2.0.0',
+        performance: performanceMonitor.getMetrics(),
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Start server immediately for Cloud Run readiness
 console.log(`🚀 Starting server on port ${port}...`);
 const server = app.listen(port, '0.0.0.0', () => {
@@ -66,6 +125,7 @@ const server = app.listen(port, '0.0.0.0', () => {
     console.log(`📈 Status: /status`);
     console.log(`🧪 Test: /test`);
     console.log(`🐛 Debug: /debug`);
+    console.log(`📊 Performance: /performance`);
     
     // Initialize bot after server is ready
     setTimeout(() => {
@@ -109,14 +169,16 @@ async function initializeBot() {
         
         console.log('🤖 Bot instance created');
         
-        // Import menu modules
-        const menuCommand = require('./command/menu-command');
-        const menuCallbacks = require('./command/menu-callbacks');
-        const menu = require('./command/menu');
+        // Lazy load menu modules for better performance
+        let menuCommand, menuCallbacks, menu, autoMenu;
         
         // Enhanced start command with menu
         bot.start(async (ctx) => {
             try {
+                if (!menuCommand) menuCommand = require('./command/menu-command');
+                if (!menuCallbacks) menuCallbacks = require('./command/menu-callbacks');
+                if (!menu) menu = require('./command/menu');
+                
                 const startCommand = require('./command/start');
                 await startCommand(ctx);
             } catch (error) {
@@ -125,18 +187,34 @@ async function initializeBot() {
             }
         });
         
-        // Import auto menu handlers
-        const autoMenu = require('./command/auto-menu');
+        // Lazy load auto menu handlers
+        const loadAutoMenu = () => {
+            if (!autoMenu) autoMenu = require('./command/auto-menu');
+            return autoMenu;
+        };
         
         // Menu commands
-        bot.command('menu', menuCommand);
-        bot.command('auto', autoMenu.autoMenuHandler);
-        bot.command('quick', autoMenu.quickMenuHandler);
-        bot.command('welcome', autoMenu.welcomeMenuHandler);
+        bot.command('menu', (ctx) => {
+            if (!menuCommand) menuCommand = require('./command/menu-command');
+            return menuCommand(ctx);
+        });
+        bot.command('auto', (ctx) => {
+            const autoMenu = loadAutoMenu();
+            return autoMenu.autoMenuHandler(ctx);
+        });
+        bot.command('quick', (ctx) => {
+            const autoMenu = loadAutoMenu();
+            return autoMenu.quickMenuHandler(ctx);
+        });
+        bot.command('welcome', (ctx) => {
+            const autoMenu = loadAutoMenu();
+            return autoMenu.welcomeMenuHandler(ctx);
+        });
         
         // Menu callback handlers using the new menu system
         bot.action(/^menu_/, async (ctx) => {
             try {
+                if (!menuCallbacks) menuCallbacks = require('./command/menu-callbacks');
                 await menuCallbacks.handleMenuCallbacks(ctx);
             } catch (error) {
                 console.error('Error in menu callback:', error);
@@ -147,6 +225,7 @@ async function initializeBot() {
         // Handle all other callbacks using the new menu system
         bot.action(/^(join_|lang_|vip_|help_|settings_|rooms_|donate_|pay_|avatar_)/, async (ctx) => {
             try {
+                if (!menuCallbacks) menuCallbacks = require('./command/menu-callbacks');
                 await menuCallbacks.handleMenuCallbacks(ctx);
             } catch (error) {
                 console.error('Error in callback handler:', error);
@@ -180,6 +259,7 @@ async function initializeBot() {
         // Language command
         bot.command('lang', async (ctx) => {
             try {
+                if (!menu) menu = require('./command/menu');
                 await menu.showLanguageMenu(ctx);
             } catch (error) {
                 console.error('Error in lang command:', error);
@@ -190,6 +270,7 @@ async function initializeBot() {
         // Join command
         bot.command('join', async (ctx) => {
             try {
+                if (!menu) menu = require('./command/menu');
                 await menu.showJoinMenu(ctx);
             } catch (error) {
                 console.error('Error in join command:', error);
@@ -222,6 +303,7 @@ async function initializeBot() {
         // Rooms command
         bot.command('rooms', async (ctx) => {
             try {
+                if (!menu) menu = require('./command/menu');
                 await menu.showRoomsMenu(ctx);
             } catch (error) {
                 console.error('Error in rooms command:', error);
@@ -248,6 +330,7 @@ async function initializeBot() {
             if (message && !message.startsWith('/')) {
                 try {
                     // Use smart menu handler for non-command messages
+                    const autoMenu = loadAutoMenu();
                     await autoMenu.smartMenuHandler(ctx);
                 } catch (error) {
                     console.error('Error in smart menu:', error);

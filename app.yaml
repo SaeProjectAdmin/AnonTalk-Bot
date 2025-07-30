@@ -1,12 +1,14 @@
 runtime: nodejs18
 env: standard
 
-instance_class: F1
+instance_class: F2
 
 automatic_scaling:
-  target_cpu_utilization: 0.65
+  target_cpu_utilization: 0.7
   min_instances: 1
-  max_instances: 10
+  max_instances: 20
+  target_concurrent_requests: 100
+  max_concurrent_requests: 1000
 
 env_variables:
   NODE_ENV: production
@@ -14,4 +16,9 @@ env_variables:
 handlers:
   - url: /.*
     script: auto
-    secure: always 
+    secure: always
+    http_headers:
+      X-Content-Type-Options: nosniff
+      X-Frame-Options: DENY
+      X-XSS-Protection: 1; mode=block
+      Cache-Control: public, max-age=300 
