@@ -6,16 +6,31 @@ AnonTalk Bot is a comprehensive anonymous chat bot for Telegram with an expanded
 
 ## 🏗️ System Architecture
 
-### 📂 Room Categories (9 Categories)
-- **💬 General** - General discussion rooms
-- **😌 Chill** - Relaxed conversation spaces
-- **🎲 Random** - Random topic discussions
-- **🎮 Gaming** - Gaming-related conversations
-- **🎵 Music** - Music and entertainment chat
-- **💻 Tech** - Technology discussions
-- **⚽ Sports** - Sports and fitness chat
-- **🍕 Food** - Food and culinary discussions
-- **👑 VIP** - Exclusive VIP-only rooms
+### 🎭 Fun Room Types (24 Types)
+- **🤪 Room Ghibah** - Gossip and casual chat
+- **😴 Room Tidur** - Relaxed and sleepy vibes
+- **🍕 Room Makan** - Food and culinary discussions
+- **🎮 Room Game** - Gaming conversations
+- **🎵 Room Musik** - Music and entertainment
+- **💻 Room Coding** - Technology and programming
+- **🏃 Room Olahraga** - Sports and fitness
+- **📚 Room Belajar** - Study and education
+- **🎬 Room Film** - Movies and entertainment
+- **🛒 Room Shopping** - Shopping and fashion
+- **✈️ Room Travel** - Travel and adventure
+- **🐱 Room Kucing** - Pet lovers (cats)
+- **🐕 Room Anjing** - Pet lovers (dogs)
+- **🌺 Room Bunga** - Nature and flowers
+- **☕ Room Kopi** - Coffee and beverages
+- **🍰 Room Kue** - Desserts and sweets
+- **🎨 Room Seni** - Art and creativity
+- **📱 Room Gadget** - Gadgets and tech
+- **💄 Room Makeup** - Beauty and cosmetics
+- **🏠 Room Rumah** - Home and lifestyle
+- **🚗 Room Mobil** - Cars and vehicles
+- **🌙 Room Malam** - Night owls
+- **☀️ Room Pagi** - Early birds
+- **🌈 Room Pelangi** - Colorful and fun
 
 ### 🌐 Language Support
 - **🇮🇩 Indonesia** - Full Indonesian support
@@ -23,10 +38,10 @@ AnonTalk Bot is a comprehensive anonymous chat bot for Telegram with an expanded
 
 
 ### 🏠 Room Structure
-- **24 Default Rooms** (8 per language)
+- **48 Default Rooms** (24 per language)
 - **Regular Rooms**: 20 member capacity
 - **VIP Rooms**: 30 member capacity
-- **Category-based organization**
+- **Fun name-based organization**
 - **Language-specific filtering**
 
 ## 👑 VIP System
@@ -91,8 +106,8 @@ AnonTalk Bot is a comprehensive anonymous chat bot for Telegram with an expanded
 - `/cancel` - Cancel current action
 
 ### 🏠 Room Commands
-- `/join` - Join rooms by category (enhanced with inline keyboard)
-- `/rooms` - View all available rooms (grouped by category)
+- `/join` - Join fun rooms (enhanced with inline keyboard)
+- `/rooms` - View all available rooms
 - `/exit` - Leave current room
 - `/list` - Show room members
 
@@ -156,7 +171,6 @@ BOT_NAME=AnonTalk Bot
 {
   "room": "unique_room_id",
   "lang": "room_language",
-  "category": "room_category",
   "member": "current_member_count",
   "maxMember": "maximum_capacity",
   "private": "is_private_room",
@@ -184,13 +198,13 @@ BOT_NAME=AnonTalk Bot
 
 ### 🏠 Smart Room Management
 - **Auto-balancing**: Automatic room distribution
-- **Category Filtering**: Easy room discovery
+- **Fun Room Names**: Easy room discovery with fun names
 - **Language Isolation**: Language-specific rooms
 - **Capacity Management**: Dynamic room capacity
 
 ### 📱 Modern UI/UX
 - **Inline Keyboards**: Button-based navigation
-- **Category Icons**: Visual room categorization
+- **Fun Room Icons**: Visual room identification with fun icons
 - **Status Indicators**: Clear user and room status
 - **Responsive Design**: Works on all devices
 

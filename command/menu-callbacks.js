@@ -59,16 +59,21 @@ const handleMenuCallbacks = async (ctx) => {
                 await handleRandomRoom(ctx);
                 break;
                 
-            case 'join_gaming':
-            case 'join_general':
-            case 'join_education':
-            case 'join_music':
-            case 'join_entertainment':
-            case 'join_technology':
-            case 'join_sports':
-            case 'join_food':
-            case 'join_travel':
-                await handleJoinRoom(ctx, callbackData.replace('join_', ''));
+            // Handle fun room callbacks
+            default:
+                if (callbackData.startsWith('join_fun_room_')) {
+                    const roomIndex = parseInt(callbackData.replace('join_fun_room_', ''));
+                    const joinCommand = require('./join');
+                    await joinCommand.handleFunRoomCallback(ctx, roomIndex);
+                } else if (callbackData.startsWith('join_')) {
+                    // Handle other join callbacks for backward compatibility
+                    await handleJoinRoom(ctx, callbackData.replace('join_', ''));
+                } else if (callbackData.startsWith('avatar_')) {
+                    const avatarType = callbackData.replace('avatar_', '');
+                    await handleAvatarCallback(ctx, avatarType);
+                } else {
+                    await ctx.reply('❌ Menu tidak ditemukan');
+                }
                 break;
                 
             // Language callbacks
@@ -132,14 +137,7 @@ const handleMenuCallbacks = async (ctx) => {
                 await handleDonateCustom(ctx);
                 break;
                 
-            default:
-                // Handle avatar selections
-                if (callbackData.startsWith('avatar_')) {
-                    const avatarType = callbackData.replace('avatar_', '');
-                    await handleAvatarCallback(ctx, avatarType);
-                } else {
-                    await ctx.reply('❌ Menu tidak ditemukan');
-                }
+
         }
         
     } catch (error) {
@@ -296,14 +294,9 @@ const handleRandomRoom = async (ctx) => {
         const randomIndex = Math.floor(Math.random() * availableRooms.length);
         const randomRoom = availableRooms[randomIndex];
         
-        // Get category info for display
-        const categoryInfo = db.ROOM_CATEGORIES[randomRoom.category];
-        const categoryName = categoryInfo ? (categoryInfo.name[user.lang] || categoryInfo.name['English']) : randomRoom.category;
-        
         const randomText = `🎲 **Random Room Joined!**
 
-✅ **Room:** ${randomRoom.description || `${categoryInfo?.icon || '🏠'} ${categoryName}`}
-📂 **Category:** ${categoryName}
+✅ **Room:** ${randomRoom.description || 'Room Acak'}
 👥 **Members:** ${randomRoom.member + 1}/${randomRoom.maxMember}
 ${randomRoom.vip ? '👑 **VIP Room**' : ''}
 
@@ -311,7 +304,7 @@ ${randomRoom.vip ? '👑 **VIP Room**' : ''}
         
         // Actually join the room (call the join function)
         const joinCommand = require('./join');
-        await joinCommand(ctx);
+        await joinCommand.handleRandomRoomCallback(ctx);
         
         // Update the message after joining
         await ctx.editMessageText(randomText, {

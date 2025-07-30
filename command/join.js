@@ -1,7 +1,5 @@
-const uniqueID = () => Date.now() + Math.floor(Math.random() * 100);
-const db = require('../db');
-const lang = require('../lang');
-const roomExit = require('./exit');
+const db = require('../db'); // Firebase DB instance
+const lang = require('../lang'); // Language module
 
 module.exports = async (ctx) => {
     try {
@@ -15,80 +13,26 @@ module.exports = async (ctx) => {
             return ctx.telegram.sendMessage(ctx.chat.id, "Please set your language first with /lang command.");
         }
 
-        // Check if user is in a room and exit first
-        if (user.room !== '') {
-            await roomExit(ctx, () => joinRandomRoom(ctx, user));
-        } else {
-            await joinRandomRoom(ctx, user);
-        }
-    } catch (err) {
-        console.error("Error in join command:", err);
+        // Show fun room selection
+        await showFunRooms(ctx, user);
+        
+    } catch (error) {
+        console.error("Error in join command:", error);
         ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
     }
 };
 
-const joinRandomRoom = async (ctx, user) => {
+const showFunRooms = async (ctx, user) => {
     try {
         const isVIP = await db.isUserVIP(ctx.chat.id);
+        const funRoomNames = await db.getFunRoomNames();
         
-        // Get all rooms for user's language (ignore category)
-        const rooms = await db.getRoomsByLanguage(user.lang);
-        
-        if (rooms.length === 0) {
-            const noRoomsMessage = user.lang === 'Indonesia' ? 
-                "❌ Tidak ada room yang tersedia untuk bahasa Anda." : 
-                "❌ No rooms available for your language.";
-            return ctx.telegram.sendMessage(ctx.chat.id, noRoomsMessage);
-        }
-        
-        // Filter available rooms (non-VIP rooms for non-VIP users, all rooms for VIP users)
-        const availableRooms = rooms.filter(room => {
-            if (room.vip && !isVIP) return false;
-            return room.member < room.maxMember;
-        });
-        
-        if (availableRooms.length === 0) {
-            const message = isVIP ? 
-                (user.lang === 'Indonesia' ? "❌ Semua room sudah penuh." : "❌ All rooms are full.") : 
-                (user.lang === 'Indonesia' ? "❌ Semua room yang tersedia adalah VIP-only. Upgrade ke VIP untuk akses." : "❌ All available rooms are VIP-only. Upgrade to VIP to access.");
-            return ctx.telegram.sendMessage(ctx.chat.id, message);
-        }
-        
-        // Select a random room
-        const randomIndex = Math.floor(Math.random() * availableRooms.length);
-        const randomRoom = availableRooms[randomIndex];
-        
-        // Join the random room
-        await joinRoom(ctx, user, randomRoom);
-        
-        const randomMessage = user.lang === 'Indonesia' ? 
-            '🎲 Anda telah bergabung dengan room acak!' :
-            '🎲 You have joined a random room!';
-        
-        ctx.telegram.sendMessage(ctx.chat.id, randomMessage);
-        
-    } catch (error) {
-        console.error("Error joining random room:", error);
-        const errorMessage = user.lang === 'Indonesia' ? 
-            "❌ Terjadi kesalahan saat bergabung dengan room acak. Silakan coba lagi." :
-            "❌ An error occurred while joining random room. Please try again.";
-        ctx.telegram.sendMessage(ctx.chat.id, errorMessage);
-    }
-};
-
-const showRoomCategories = async (ctx, user) => {
-    try {
-        const isVIP = await db.isUserVIP(ctx.chat.id);
-        const categories = Object.keys(db.ROOM_CATEGORIES);
-        
-        // Create inline keyboard for room categories
+        // Create inline keyboard for fun rooms
         const keyboard = [];
         let row = [];
         
         // Add "Join Random Room" button at the top
-        const randomButtonText = user.lang === 'Indonesia' ? '🎲 Join Room Acak' : 
-                         
-                                '🎲 Join Random Room';
+        const randomButtonText = user.lang === 'Indonesia' ? '🎲 Join Room Acak' : '🎲 Join Random Room';
         
         keyboard.push([{
             text: randomButtonText,
@@ -97,18 +41,21 @@ const showRoomCategories = async (ctx, user) => {
         
         // Add separator
         keyboard.push([{
-            text: '📂 Pilih Kategori / Choose Category',
+            text: '🏠 Pilih Room / Choose Room',
             callback_data: 'separator'
         }]);
         
-        categories.forEach((category, index) => {
-            const categoryInfo = db.ROOM_CATEGORIES[category];
-            const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
-            const buttonText = `${categoryInfo.icon} ${categoryName}`;
+        // Get available rooms for user's language
+        const availableRooms = await db.getRoomsByLanguage(user.lang);
+        
+        // Create buttons for each fun room name
+        funRoomNames.forEach((roomName, index) => {
+            const roomNameText = roomName.name[user.lang] || roomName.name['English'];
+            const buttonText = `${roomName.icon} ${roomNameText}`;
             
             row.push({
                 text: buttonText,
-                callback_data: `join_category_${category}`
+                callback_data: `join_fun_room_${index}`
             });
             
             if (row.length === 2) {
@@ -121,30 +68,85 @@ const showRoomCategories = async (ctx, user) => {
             keyboard.push(row);
         }
         
-        const message = lang(user.lang, '', '', '', '').room_categories.replace('${par1}', 
-            categories.map(cat => {
-                const catInfo = db.ROOM_CATEGORIES[cat];
-                const catName = catInfo.name[user.lang] || catInfo.name['English'];
-                return `${catInfo.icon} ${catName}`;
-            }).join('\n')
-        );
+        const message = `🏠 **Pilih Room yang Lucu!**
+
+Pilih room yang ingin Anda masuki:
+
+${funRoomNames.map((roomName, index) => {
+    const roomNameText = roomName.name[user.lang] || roomName.name['English'];
+    return `${roomName.icon} **${roomNameText}**`;
+}).join('\n')}
+
+💡 **Tips:** Setiap room memiliki tema yang berbeda dan menyenangkan!`;
         
         await ctx.telegram.sendMessage(ctx.chat.id, message, {
+            parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: keyboard
             }
         });
         
-        // Store user context for callback handling
-        ctx.session = { user, isVIP };
-        
     } catch (error) {
-        console.error("Error showing room categories:", error);
+        console.error("Error showing fun rooms:", error);
         ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
     }
 };
 
-// Handle random room join callback
+// Handle fun room selection callback
+module.exports.handleFunRoomCallback = async (ctx, roomIndex) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.answerCbQuery("User not found. Please try /start again.");
+        }
+        
+        // Get fun room names
+        const funRoomNames = await db.getFunRoomNames();
+        const selectedRoomName = funRoomNames[roomIndex];
+        
+        if (!selectedRoomName) {
+            return ctx.answerCbQuery("Room not found.");
+        }
+        
+        // Get rooms for user's language
+        const rooms = await db.getRoomsByLanguage(user.lang);
+        
+        // Find rooms that match the selected room name
+        const matchingRooms = rooms.filter(room => {
+            const roomNameText = selectedRoomName.name[user.lang] || selectedRoomName.name['English'];
+            return room.description && room.description.includes(roomNameText);
+        });
+        
+        if (matchingRooms.length === 0) {
+            return ctx.answerCbQuery("No rooms available for this selection.");
+        }
+        
+        // Filter VIP rooms if user is not VIP
+        const availableRooms = matchingRooms.filter(room => {
+            if (room.vip && !isVIP) return false;
+            return room.member < room.maxMember;
+        });
+        
+        if (availableRooms.length === 0) {
+            const message = isVIP ? 
+                "All rooms of this type are full." : 
+                "This room type is VIP only. Upgrade to VIP to access.";
+            return ctx.answerCbQuery(message);
+        }
+        
+        // Join the first available room
+        const roomToJoin = availableRooms[0];
+        await joinRoom(ctx, user, roomToJoin);
+        
+    } catch (error) {
+        console.error("Error handling fun room callback:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
+    }
+};
+
+// Handle random room callback
 module.exports.handleRandomRoomCallback = async (ctx) => {
     try {
         const user = await db.getUserByChatId(ctx.chat.id);
@@ -154,164 +156,27 @@ module.exports.handleRandomRoomCallback = async (ctx) => {
             return ctx.answerCbQuery("User not found. Please try /start again.");
         }
         
-        // Get all rooms for user's language (ignore category)
+        // Get available rooms for user's language
         const rooms = await db.getRoomsByLanguage(user.lang);
         
-        if (rooms.length === 0) {
-            return ctx.answerCbQuery("No rooms available.");
-        }
-        
-        // Filter available rooms (non-VIP rooms for non-VIP users, all rooms for VIP users)
+        // Filter available rooms
         const availableRooms = rooms.filter(room => {
             if (room.vip && !isVIP) return false;
             return room.member < room.maxMember;
         });
         
         if (availableRooms.length === 0) {
-            const message = isVIP ? 
-                "All rooms are full." : 
-                "All available rooms are VIP-only. Upgrade to VIP to access.";
-            return ctx.answerCbQuery(message);
+            return ctx.answerCbQuery("No rooms available at the moment.");
         }
         
-        // Select a random room
+        // Select random room
         const randomIndex = Math.floor(Math.random() * availableRooms.length);
         const randomRoom = availableRooms[randomIndex];
         
-        // Join the random room
         await joinRoom(ctx, user, randomRoom);
-        
-        const randomMessage = user.lang === 'Indonesia' ? '🎲 Anda telah bergabung dengan room acak!' :
-                    
-                            '🎲 You have joined a random room!';
-        
-        ctx.answerCbQuery(randomMessage);
         
     } catch (error) {
         console.error("Error handling random room callback:", error);
-        ctx.answerCbQuery("An error occurred. Please try again.");
-    }
-};
-
-// Handle category selection callback
-module.exports.handleCategoryCallback = async (ctx, category) => {
-    try {
-        const user = await db.getUserByChatId(ctx.chat.id);
-        const isVIP = await db.isUserVIP(ctx.chat.id);
-        
-        if (!user) {
-            return ctx.answerCbQuery("User not found. Please try /start again.");
-        }
-        
-        // Get rooms for selected category and user's language
-        const rooms = await db.getRoomsByLanguage(user.lang);
-        const categoryRooms = rooms.filter(room => room.category === category);
-        
-        if (categoryRooms.length === 0) {
-            return ctx.answerCbQuery("No rooms available for this category.");
-        }
-        
-        // Filter VIP rooms if user is not VIP
-        const availableRooms = categoryRooms.filter(room => {
-            if (room.vip && !isVIP) return false;
-            return room.member < room.maxMember;
-        });
-        
-        if (availableRooms.length === 0) {
-            const message = isVIP ? 
-                "All rooms in this category are full." : 
-                "This category contains VIP rooms only. Upgrade to VIP to access.";
-            return ctx.answerCbQuery(message);
-        }
-        
-        // Show available rooms in category
-        await showRoomsInCategory(ctx, user, availableRooms, category);
-        
-    } catch (error) {
-        console.error("Error handling category callback:", error);
-        ctx.answerCbQuery("An error occurred. Please try again.");
-    }
-};
-
-const showRoomsInCategory = async (ctx, user, rooms, category) => {
-    try {
-        const categoryInfo = db.ROOM_CATEGORIES[category];
-        const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
-        
-        const keyboard = [];
-        rooms.forEach(room => {
-            const roomName = room.description || `${categoryInfo.icon} ${categoryName}`;
-            const memberInfo = `${room.member}/${room.maxMember}`;
-            const vipIndicator = room.vip ? '👑 ' : '';
-            
-            keyboard.push([{
-                text: `${vipIndicator}${roomName} (${memberInfo})`,
-                callback_data: `join_room_${room.room}`
-            }]);
-        });
-        
-        // Add back button
-        keyboard.push([{
-            text: '⬅️ Back to Categories',
-            callback_data: 'join_categories'
-        }]);
-        
-        const message = `📂 ${categoryInfo.icon} ${categoryName} Rooms:\n\nSelect a room to join:`;
-        
-        await ctx.editMessageText(message, {
-            reply_markup: {
-                inline_keyboard: keyboard
-            }
-        });
-        
-    } catch (error) {
-        console.error("Error showing rooms in category:", error);
-        ctx.answerCbQuery("An error occurred. Please try again.");
-    }
-};
-
-// Handle room selection callback
-module.exports.handleRoomCallback = async (ctx, roomId) => {
-    try {
-        const user = await db.getUserByChatId(ctx.chat.id);
-        const isVIP = await db.isUserVIP(ctx.chat.id);
-        
-        if (!user) {
-            return ctx.answerCbQuery("User not found. Please try /start again.");
-        }
-        
-        // Get room information
-        const roomSnapshot = await db.collection('rooms').orderByChild('room').equalTo(roomId).once('value');
-        const roomData = roomSnapshot.val();
-        
-        if (!roomData) {
-            return ctx.answerCbQuery("Room not found.");
-        }
-        
-        const room = Object.values(roomData)[0];
-        
-        // Check VIP access
-        if (room.vip && !isVIP) {
-            return ctx.answerCbQuery("This is a VIP room. Upgrade to VIP to access.");
-        }
-        
-        // Check if room is full
-        if (room.member >= room.maxMember) {
-            if (isVIP) {
-                // VIP users can join full rooms with priority
-                await joinRoomWithPriority(ctx, user, room);
-                return ctx.answerCbQuery("VIP Priority: You joined a full room!");
-            } else {
-                return ctx.answerCbQuery("Room is full. Upgrade to VIP for priority access.");
-            }
-        }
-        
-        // Join room normally
-        await joinRoom(ctx, user, room);
-        ctx.answerCbQuery("Successfully joined room!");
-        
-    } catch (error) {
-        console.error("Error handling room callback:", error);
         ctx.answerCbQuery("An error occurred. Please try again.");
     }
 };
@@ -337,13 +202,16 @@ const joinRoom = async (ctx, user, room) => {
         });
         
         // Send confirmation to user
-        const categoryInfo = db.ROOM_CATEGORIES[room.category];
-        const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
+        const roomInfo = `🏠 **Room Info:**
+📝 **Nama:** ${room.description}
+👥 **Member:** ${room.member + 1}/${room.maxMember}
+${room.vip ? '👑 **VIP Room**' : ''}`;
         
-        const roomInfo = lang(user.lang, room.description, room.member, room.maxMember, categoryName).room_info;
         const joinConfirm = lang(user.lang, room.description).join_room;
         
-        await ctx.telegram.sendMessage(ctx.chat.id, `${joinConfirm}\n\n${roomInfo}`);
+        await ctx.telegram.sendMessage(ctx.chat.id, `${joinConfirm}\n\n${roomInfo}`, {
+            parse_mode: 'Markdown'
+        });
         
     } catch (error) {
         console.error("Error joining room:", error);
@@ -351,55 +219,39 @@ const joinRoom = async (ctx, user, room) => {
     }
 };
 
-const joinRoomWithPriority = async (ctx, user, room) => {
-    try {
-        // For VIP priority, we might need to remove a non-VIP user if room is full
-        if (room.member >= room.maxMember) {
-            // Find a non-VIP user to remove (simplified implementation)
-            const usersInRoomSnapshot = await db.collection('users').orderByChild('room').equalTo(room.room).once('value');
-            const usersInRoomData = usersInRoomSnapshot.val();
-            
-            if (usersInRoomData) {
-                const usersInRoom = Object.values(usersInRoomData);
-                const nonVIPUser = usersInRoom.find(u => u.userid !== user.userid);
-                
-                if (nonVIPUser) {
-                    // Remove non-VIP user and notify them
-                    await db.collection('users').child(nonVIPUser.userid).update({ room: '' });
-                    await ctx.telegram.sendMessage(nonVIPUser.userid, 
-                        "You were removed from the room due to VIP priority access.");
-                }
-            }
-        }
-        
-        // Join the room
-        await joinRoom(ctx, user, room);
-        
-        // Send VIP priority message
-        await ctx.telegram.sendMessage(ctx.chat.id, lang(user.lang).vip_priority_join);
-        
-    } catch (error) {
-        console.error("Error joining room with priority:", error);
-        throw error;
-    }
-};
-
-// Handle back to categories callback
-module.exports.handleBackToCategories = async (ctx) => {
+// Handle room selection callback (for backward compatibility)
+module.exports.handleRoomCallback = async (ctx, roomId) => {
     try {
         const user = await db.getUserByChatId(ctx.chat.id);
+        
         if (!user) {
             return ctx.answerCbQuery("User not found. Please try /start again.");
         }
         
-        await showRoomCategories(ctx, user);
-        ctx.answerCbQuery();
+        // Get room by ID
+        const roomSnapshot = await db.collection('rooms').orderByChild('room').equalTo(roomId).once('value');
+        const roomData = roomSnapshot.val();
+        
+        if (!roomData) {
+            return ctx.answerCbQuery("Room not found.");
+        }
+        
+        const room = Object.values(roomData)[0];
+        
+        // Check if user can join
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        if (room.vip && !isVIP) {
+            return ctx.answerCbQuery("This is a VIP room. Upgrade to VIP to access.");
+        }
+        
+        if (room.member >= room.maxMember) {
+            return ctx.answerCbQuery("This room is full.");
+        }
+        
+        await joinRoom(ctx, user, room);
         
     } catch (error) {
-        console.error("Error handling back to categories:", error);
+        console.error("Error handling room callback:", error);
         ctx.answerCbQuery("An error occurred. Please try again.");
     }
 };
-
-// Export showRoomCategories for menu system
-module.exports.showRoomCategories = showRoomCategories;

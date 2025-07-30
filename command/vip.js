@@ -103,7 +103,6 @@ module.exports.createVIPRoom = async (ctx, roomName) => {
         
         const roomData = {
             lang: user.lang,
-            category: 'vip',
             description: `👑 ${roomName} (VIP)`,
             createdBy: ctx.chat.id,
             maxMember: 30,

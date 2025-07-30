@@ -20,14 +20,14 @@ module.exports = async (ctx) => {
             `/avatar - Change your avatar\n` +
             `/cancel - Cancel current action\n\n` +
             `🏠 Room Commands:\n` +
-            `/join - Join rooms by category\n` +
+            `/join - Join fun rooms\n` +
             `/rooms - View all available rooms\n` +
             `/exit - Leave current room\n` +
             `/list - Show room members\n\n` +
-            `📂 Room Categories:\n` +
-            `💬 General | 😌 Chill | 🎲 Random\n` +
-            `🎮 Gaming | 🎵 Music | 💻 Tech\n` +
-            `⚽ Sports | 🍕 Food\n\n` +
+            `🎭 Fun Room Types:\n` +
+            `🤪 Ghibah | 😴 Tidur | 🍕 Makan\n` +
+            `🎮 Game | 🎵 Musik | 💻 Coding\n` +
+            `🏃 Olahraga | 📚 Belajar | 🎬 Film\n\n` +
             `🌐 Supported Languages:\n` +
             `🇮🇩 Indonesia | 🇺🇸 English`;
 

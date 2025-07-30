@@ -70,7 +70,6 @@ const createCustomRoom = async (ctx, user, roomName) => {
             lang: user.lang,
             member: 1,
             private: true,
-            category: 'custom',
             vip_only: true,
             created_by: user.userid,
             created_at: new Date().toISOString()
