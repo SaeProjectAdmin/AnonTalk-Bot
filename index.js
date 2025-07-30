@@ -365,6 +365,121 @@ async function initializeBot() {
                 ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
             }
         });
+
+        // Admin commands
+        bot.command('admin', async (ctx) => {
+            try {
+                const admin = require('./command/admin');
+                if (!admin.isAdmin(ctx.from.id)) {
+                    return ctx.reply('❌ Anda tidak memiliki akses admin.');
+                }
+                
+                const adminText = `🔧 **Admin Panel**
+
+**Content Filter Commands:**
+• /filter_toggle - Toggle content filtering
+• /filter_stats - View filter statistics
+
+**User Management:**
+• /warn <user_id> - View user warnings
+• /ban <user_id> [reason] - Ban user
+• /unban <user_id> - Unban user
+• /reset_warn <user_id> - Reset user warnings
+
+**Example:**
+/warn 123456789
+/ban 123456789 Spam content
+/unban 123456789`;
+
+                await ctx.reply(adminText, { parse_mode: 'Markdown' });
+            } catch (error) {
+                console.error('Error in admin command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // Toggle content filter
+        bot.command('filter_toggle', async (ctx) => {
+            try {
+                const admin = require('./command/admin');
+                await admin.toggleContentFilter(ctx);
+            } catch (error) {
+                console.error('Error in filter_toggle command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // View filter stats
+        bot.command('filter_stats', async (ctx) => {
+            try {
+                const admin = require('./command/admin');
+                await admin.viewFilterStats(ctx);
+            } catch (error) {
+                console.error('Error in filter_stats command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // View user warnings
+        bot.command('warn', async (ctx) => {
+            try {
+                const admin = require('./command/admin');
+                const args = ctx.message.text.split(' ');
+                if (args.length < 2) {
+                    return ctx.reply('❌ Usage: /warn <user_id>');
+                }
+                await admin.viewUserWarnings(ctx, args[1]);
+            } catch (error) {
+                console.error('Error in warn command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // Ban user
+        bot.command('ban', async (ctx) => {
+            try {
+                const admin = require('./command/admin');
+                const args = ctx.message.text.split(' ');
+                if (args.length < 2) {
+                    return ctx.reply('❌ Usage: /ban <user_id> [reason]');
+                }
+                const reason = args.slice(2).join(' ') || 'Admin ban';
+                await admin.banUser(ctx, args[1], reason);
+            } catch (error) {
+                console.error('Error in ban command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // Unban user
+        bot.command('unban', async (ctx) => {
+            try {
+                const admin = require('./command/admin');
+                const args = ctx.message.text.split(' ');
+                if (args.length < 2) {
+                    return ctx.reply('❌ Usage: /unban <user_id>');
+                }
+                await admin.unbanUser(ctx, args[1]);
+            } catch (error) {
+                console.error('Error in unban command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
+
+        // Reset user warnings
+        bot.command('reset_warn', async (ctx) => {
+            try {
+                const admin = require('./command/admin');
+                const args = ctx.message.text.split(' ');
+                if (args.length < 2) {
+                    return ctx.reply('❌ Usage: /reset_warn <user_id>');
+                }
+                await admin.resetUserWarnings(ctx, args[1]);
+            } catch (error) {
+                console.error('Error in reset_warn command:', error);
+                ctx.reply('❌ Terjadi kesalahan.');
+            }
+        });
         
 
         
@@ -376,7 +491,7 @@ async function initializeBot() {
                      '🌐 Server: Firebase App Hosting');
         });
         
-        // Handle all messages with smart menu
+        // Handle all messages with session handler
         bot.on('message', async (ctx) => {
             const message = ctx.message.text;
             console.log('📨 Received message:', message);
@@ -390,12 +505,12 @@ async function initializeBot() {
                         // Handle custom avatar input
                         await handleCustomAvatarInput(ctx, message);
                     } else {
-                        // Use smart menu handler for non-command messages
-                        const autoMenu = loadAutoMenu();
-                        await autoMenu.smartMenuHandler(ctx);
+                        // Use session handler for room messaging and other features
+                        const sessionHandler = require('./session/sessions');
+                        await sessionHandler(ctx);
                     }
                 } catch (error) {
-                    console.error('Error in smart menu:', error);
+                    console.error('Error in session handler:', error);
                     // Fallback to simple reply
                     ctx.reply('💬 Pesan Anda: ' + message + '\n\n' +
                              '🔗 Anda sekarang bisa chat dengan user lain di room!\n' +

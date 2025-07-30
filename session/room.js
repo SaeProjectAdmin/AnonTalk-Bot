@@ -8,6 +8,15 @@ module.exports = async (ctx, user) => {
     const userava = user.ava || '👤';
 
     try {
+        // Check if user is banned
+        if (user.banned) {
+            const banMessage = user.lang === 'Indonesia' ? 
+                '❌ Akun Anda telah diblokir karena melanggar aturan.' :
+                '❌ Your account has been banned for violating rules.';
+            await ctx.telegram.sendMessage(ctx.chat.id, banMessage);
+            return;
+        }
+
         // Check if user is VIP for media size limits
         const isVIP = user.vip || false;
         const isMedia = mediaHandler.isMediaMessage(ctx.message);
@@ -21,12 +30,18 @@ module.exports = async (ctx, user) => {
                 const messages = {
                     'Indonesia': `❌ File terlalu besar. Ukuran maksimal untuk ${mediaType} adalah ${isVIP ? '200MB' : '50MB'}.`,
                     'English': `❌ File too large. Maximum size for ${mediaType} is ${isVIP ? '200MB' : '50MB'}.`,
-
                 };
                 
                 await ctx.telegram.sendMessage(ctx.chat.id, messages[user.lang] || messages['English']);
                 return;
             }
+        }
+
+        // Check for inappropriate content
+        const messageType = mediaHandler.getMessageType ? mediaHandler.getMessageType(ctx) : 'text';
+        if (mediaHandler.isInappropriateContent && mediaHandler.isInappropriateContent(ctx, messageType)) {
+            await mediaHandler.handleInappropriateContent(ctx, user, messageType);
+            return;
         }
 
         // Fetch users in the same room except the sender

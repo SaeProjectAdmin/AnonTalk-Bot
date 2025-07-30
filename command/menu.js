@@ -11,11 +11,11 @@ const menuKeyboards = {
                 { text: '🌍 Language', callback_data: 'menu_lang' }
             ],
             [
-                { text: '📋 Help', callback_data: 'menu_help' },
-                { text: '🏆 Rooms List', callback_data: 'menu_rooms' }
+                { text: '👤 Avatar', callback_data: 'menu_avatar' },
+                { text: '📋 Help', callback_data: 'menu_help' }
             ],
             [
-                { text: '⚙️ Settings', callback_data: 'menu_settings' },
+                { text: '🏆 Rooms List', callback_data: 'menu_rooms' },
                 { text: '📊 Stats', callback_data: 'menu_stats' }
             ]
         ]
@@ -25,23 +25,7 @@ const menuKeyboards = {
     join: {
         inline_keyboard: [
             [
-                { text: '🎮 Gaming', callback_data: 'join_gaming' },
-                { text: '💬 General', callback_data: 'join_general' }
-            ],
-            [
-                { text: '📚 Education', callback_data: 'join_education' },
-                { text: '🎵 Music', callback_data: 'join_music' }
-            ],
-            [
-                { text: '🎬 Entertainment', callback_data: 'join_entertainment' },
-                { text: '💻 Technology', callback_data: 'join_technology' }
-            ],
-            [
-                { text: '🏃 Sports', callback_data: 'join_sports' },
-                { text: '🍔 Food', callback_data: 'join_food' }
-            ],
-            [
-                { text: '✈️ Travel', callback_data: 'join_travel' }
+                { text: '🎲 Join Room Acak / Random Room', callback_data: 'join_random_room' }
             ],
             [
                 { text: '🔙 Back to Menu', callback_data: 'menu_main' }
@@ -160,16 +144,15 @@ const menuTexts = {
     
     join: `🏠 **Join Room**
 
-Pilih kategori room yang ingin Anda masuki:
-• 🎮 Gaming - Diskusi game
-• 💬 General - Chat umum
-• 📚 Education - Belajar bersama
-• 🎵 Music - Musik dan lagu
-• 🎬 Entertainment - Hiburan
-• 💻 Technology - Teknologi
-• 🏃 Sports - Olahraga
-• 🍔 Food - Kuliner
-• ✈️ Travel - Traveling`,
+🎲 **Join Room Acak / Random Room**
+
+Klik tombol di bawah untuk langsung bergabung dengan room acak yang tersedia.
+
+**Fitur:**
+• Otomatis pilih room yang tersedia
+• Berdasarkan bahasa Anda
+• Prioritas untuk VIP users
+• Room dengan user aktif`,
     
     language: `🌍 **Pilih Bahasa**
 
@@ -279,7 +262,7 @@ const autoRegisterUser = async (ctx) => {
                 username: ctx.from.username || '',
                 first_name: ctx.from.first_name || '',
                 last_name: ctx.from.last_name || '',
-                lang: 'id', // Default to Indonesian
+                lang: 'Indonesia', // Default to Indonesian
                 registered_at: new Date().toISOString(),
                 last_activity: new Date().toISOString()
             });
@@ -305,11 +288,7 @@ module.exports = {
     showJoinMenu: async (ctx) => {
         try {
             const joinCommand = require('./join');
-            const user = await db.getUserByChatId(ctx.chat.id);
-            if (!user) {
-                return ctx.reply('❌ User not found. Please try /start again.');
-            }
-            await joinCommand.showRoomCategories(ctx, user);
+            await joinCommand(ctx);
         } catch (error) {
             console.error('Error showing join menu:', error);
             ctx.reply('❌ Terjadi kesalahan saat menampilkan menu join');
@@ -319,6 +298,14 @@ module.exports = {
     showVipMenu: (ctx) => handleMenu(ctx, 'vip'),
     showHelpMenu: (ctx) => handleMenu(ctx, 'help'),
     showRoomsMenu: (ctx) => handleMenu(ctx, 'rooms'),
-    showSettingsMenu: (ctx) => handleMenu(ctx, 'settings'),
+    showAvatarMenu: async (ctx) => {
+        try {
+            const avatarCommand = require('./avatar');
+            await avatarCommand(ctx);
+        } catch (error) {
+            console.error('Error showing avatar menu:', error);
+            ctx.reply('❌ Terjadi kesalahan saat menampilkan menu avatar');
+        }
+    },
     showDonateMenu: (ctx) => handleMenu(ctx, 'donate')
 }; 

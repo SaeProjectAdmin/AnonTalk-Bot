@@ -35,8 +35,8 @@ const handleMenuCallbacks = async (ctx) => {
                 await menu.showRoomsMenu(ctx);
                 break;
                 
-            case 'menu_settings':
-                await menu.showSettingsMenu(ctx);
+            case 'menu_avatar':
+                await menu.showAvatarMenu(ctx);
                 break;
                 
             case 'menu_donate':
@@ -311,7 +311,7 @@ ${randomRoom.vip ? '👑 **VIP Room**' : ''}
         
         // Actually join the room (call the join function)
         const joinCommand = require('./join');
-        await joinCommand.handleRandomRoomCallback(ctx);
+        await joinCommand(ctx);
         
         // Update the message after joining
         await ctx.editMessageText(randomText, {
@@ -345,11 +345,11 @@ const handleLanguageChange = async (ctx, lang) => {
     
     const langName = langNames[lang] || lang;
     
-    // Save language preference to database
+    // Save language preference to database (use full language name)
     try {
         const dbuser = db.collection('users');
         await dbuser.doc(ctx.chat.id.toString()).set({
-            lang: lang,
+            lang: langName, // Save full language name instead of short code
             userid: ctx.chat.id,
             username: ctx.from.username || '',
             first_name: ctx.from.first_name || '',
@@ -682,6 +682,26 @@ const handleSettings = async (ctx, setting) => {
     
     const settingName = settingNames[setting] || setting;
     
+    // Handle avatar setting specifically
+    if (setting === 'avatar') {
+        try {
+            const avatarCommand = require('./avatar');
+            await avatarCommand(ctx);
+        } catch (error) {
+            console.error('Error handling avatar setting:', error);
+            await ctx.editMessageText('❌ Error loading avatar settings. Please try again.', {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔙 Back to Settings Menu', callback_data: 'menu_settings' }],
+                        [{ text: '🏠 Back to Main Menu', callback_data: 'menu_main' }]
+                    ]
+                }
+            });
+        }
+        return;
+    }
+    
+    // Handle other settings (coming soon)
     const settingText = `⚙️ **${settingName} Settings**
 
 Pengaturan ${settingName} akan segera tersedia!

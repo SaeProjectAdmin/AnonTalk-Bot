@@ -57,11 +57,14 @@ module.exports = async (ctx) => {
                 { text: '56', callback_data: 'avatar_56' },
                 { text: '99', callback_data: 'avatar_99' }
             ],
-            // Action buttons
-            [
-                { text: '✏️ Custom Input', callback_data: 'avatar_custom' },
-                { text: '🗑️ Remove Avatar', callback_data: 'avatar_remove' }
-            ]
+                    // Action buttons
+        [
+            { text: '✏️ Custom Input', callback_data: 'avatar_custom' },
+            { text: '🗑️ Remove Avatar', callback_data: 'avatar_remove' }
+        ],
+        [
+            { text: '🔙 Back to Menu', callback_data: 'menu_main' }
+        ]
         ];
 
         const currentAvatar = user.ava || '👤';
@@ -97,14 +100,15 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
                 'English': '✏️ **Custom Avatar Input**\n\nSend emoji, letters, or numbers (max 2 characters):',
             };
             
-            await ctx.editMessageText(customMessage[user.lang] || customMessage['English'], {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]
-                    ]
-                }
-            });
+                         await ctx.editMessageText(customMessage[user.lang] || customMessage['English'], {
+                 parse_mode: 'Markdown',
+                 reply_markup: {
+                     inline_keyboard: [
+                         [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }],
+                         [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                     ]
+                 }
+             });
             
             ctx.answerCbQuery();
             
@@ -121,14 +125,15 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
         
             };
             
-            await ctx.editMessageText(removeMessage[user.lang] || removeMessage['English'], {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]
-                    ]
-                }
-            });
+                         await ctx.editMessageText(removeMessage[user.lang] || removeMessage['English'], {
+                 parse_mode: 'Markdown',
+                 reply_markup: {
+                     inline_keyboard: [
+                         [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }],
+                         [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                     ]
+                 }
+             });
             
             ctx.answerCbQuery('Avatar removed!');
             
@@ -152,14 +157,15 @@ module.exports.handleAvatarCallback = async (ctx, avatarType) => {
         
             };
             
-            await ctx.editMessageText(successMessage[user.lang] || successMessage['English'], {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]
-                    ]
-                }
-            });
+                         await ctx.editMessageText(successMessage[user.lang] || successMessage['English'], {
+                 parse_mode: 'Markdown',
+                 reply_markup: {
+                     inline_keyboard: [
+                         [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }],
+                         [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                     ]
+                 }
+             });
             
             ctx.answerCbQuery(`Avatar changed to ${avatarType}!`);
         }

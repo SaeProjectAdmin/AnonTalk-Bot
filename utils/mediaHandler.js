@@ -16,12 +16,148 @@ class MediaHandler {
             location: true,
             venue: true
         };
+
+        // Content filtering settings
+        this.contentFilter = {
+            enabled: true,
+            blockAdultContent: true,
+            blockViolence: true,
+            blockSpam: true,
+            // Keywords that might indicate inappropriate content
+            adultKeywords: [
+                'porn', 'sex', 'nude', 'naked', 'adult', '18+', 'xxx', 'nsfw',
+                'pornografi', 'seks', 'telanjang', 'dewasa', 'mature'
+            ],
+            // Sticker set names that might contain inappropriate content
+            blockedStickerSets: [
+                'adult', 'nsfw', 'porn', 'sex', 'nude', 'mature',
+                'dewasa', 'pornografi', 'seks', 'telanjang'
+            ]
+        };
+    }
+
+    // Check if content is inappropriate
+    isInappropriateContent(ctx, messageType) {
+        if (!this.contentFilter.enabled) return false;
+
+        try {
+            // Check text content
+            if (ctx.message.text || ctx.message.caption) {
+                const text = (ctx.message.text || ctx.message.caption || '').toLowerCase();
+                if (this.containsAdultKeywords(text)) {
+                    return true;
+                }
+            }
+
+            // Check sticker content
+            if (messageType === 'sticker' && ctx.message.sticker) {
+                const stickerSetName = ctx.message.sticker.set_name?.toLowerCase() || '';
+                if (this.isBlockedStickerSet(stickerSetName)) {
+                    return true;
+                }
+            }
+
+            // Check file names for documents
+            if (messageType === 'document' && ctx.message.document) {
+                const fileName = ctx.message.document.file_name?.toLowerCase() || '';
+                if (this.containsAdultKeywords(fileName)) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (error) {
+            console.error('Error checking content appropriateness:', error);
+            return false; // Allow content if check fails
+        }
+    }
+
+    // Check if text contains adult keywords
+    containsAdultKeywords(text) {
+        const lowerText = text.toLowerCase();
+        return this.contentFilter.adultKeywords.some(keyword => 
+            lowerText.includes(keyword)
+        );
+    }
+
+    // Check if sticker set is blocked
+    isBlockedStickerSet(setName) {
+        const lowerSetName = setName.toLowerCase();
+        return this.contentFilter.blockedStickerSets.some(blockedSet => 
+            lowerSetName.includes(blockedSet)
+        );
+    }
+
+    // Handle inappropriate content
+    async handleInappropriateContent(ctx, user, contentType) {
+        const messages = {
+            'Indonesia': {
+                photo: '❌ Foto tidak pantas terdeteksi dan diblokir.',
+                video: '❌ Video tidak pantas terdeteksi dan diblokir.',
+                sticker: '❌ Stiker tidak pantas terdeteksi dan diblokir.',
+                text: '❌ Pesan tidak pantas terdeteksi dan diblokir.',
+                document: '❌ File tidak pantas terdeteksi dan diblokir.',
+                general: '❌ Konten tidak pantas terdeteksi dan diblokir.'
+            },
+            'English': {
+                photo: '❌ Inappropriate photo detected and blocked.',
+                video: '❌ Inappropriate video detected and blocked.',
+                sticker: '❌ Inappropriate sticker detected and blocked.',
+                text: '❌ Inappropriate message detected and blocked.',
+                document: '❌ Inappropriate file detected and blocked.',
+                general: '❌ Inappropriate content detected and blocked.'
+            }
+        };
+
+        const userLang = user.lang || 'Indonesia';
+        const messageKey = contentType in messages[userLang] ? contentType : 'general';
+        const blockMessage = messages[userLang][messageKey];
+
+        // Send warning to user
+        await ctx.reply(blockMessage);
+
+        // Log the incident (optional - for moderation purposes)
+        console.log(`🚫 Content blocked for user ${user.userid}: ${contentType} in room ${user.room}`);
+
+        // Increment warning count for user (optional)
+        await this.incrementWarningCount(user.userid);
+    }
+
+    // Increment warning count for user
+    async incrementWarningCount(userId) {
+        try {
+            const userRef = db.collection('users').child(userId);
+            const snapshot = await userRef.once('value');
+            const userData = snapshot.val();
+            
+            const currentWarnings = userData?.warnings || 0;
+            const newWarnings = currentWarnings + 1;
+            
+            await userRef.update({ warnings: newWarnings });
+            
+            // Auto-ban after 3 warnings (optional)
+            if (newWarnings >= 3) {
+                await userRef.update({ 
+                    banned: true, 
+                    bannedAt: new Date().toISOString(),
+                    banReason: 'Multiple content violations'
+                });
+                console.log(`🚫 User ${userId} auto-banned for multiple violations`);
+            }
+        } catch (error) {
+            console.error('Error updating warning count:', error);
+        }
     }
 
     // Handle different types of media messages
     async handleMedia(ctx, user) {
         try {
             const messageType = this.getMessageType(ctx);
+            
+            // Check if content is inappropriate
+            if (this.isInappropriateContent(ctx, messageType)) {
+                return await this.handleInappropriateContent(ctx, user, messageType);
+            }
             
             if (!this.supportedTypes[messageType]) {
                 return this.handleUnsupportedMedia(ctx, user);
@@ -70,6 +206,39 @@ class MediaHandler {
         if (ctx.message.location) return 'location';
         if (ctx.message.venue) return 'venue';
         return 'unknown';
+    }
+
+    // Check if message is media
+    isMediaMessage(message) {
+        return !!(message.photo || message.video || message.video_note || 
+                 message.sticker || message.voice || message.audio || 
+                 message.document || message.animation);
+    }
+
+    // Get media type
+    getMediaType(message) {
+        if (message.photo) return 'photo';
+        if (message.video) return 'video';
+        if (message.video_note) return 'video_note';
+        if (message.sticker) return 'sticker';
+        if (message.voice) return 'voice';
+        if (message.audio) return 'audio';
+        if (message.document) return 'document';
+        if (message.animation) return 'animation';
+        return 'unknown';
+    }
+
+    // Validate media size
+    validateMediaSize(message, maxSize) {
+        const fileSize = message.document?.file_size || 
+                        message.photo?.[message.photo.length - 1]?.file_size ||
+                        message.video?.file_size ||
+                        message.audio?.file_size ||
+                        message.voice?.file_size ||
+                        message.animation?.file_size ||
+                        0;
+        
+        return fileSize <= maxSize;
     }
 
     async handleText(ctx, user) {
