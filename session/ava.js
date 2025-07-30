@@ -37,20 +37,8 @@ module.exports = async (ctx, user) => {
                 Markup.removeKeyboard()
             ).catch(() => false);
 
-            if (user.room !== '') {
-                // Notify others in the room of the avatar reset
-                const userInRoomSnapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(user.room).once('value');
-                const userInRoom = userInRoomSnapshot.val();
-
-                for (const key in userInRoom) {
-                    if (userInRoom[key].userid !== user.userid) {
-                        await ctx.telegram.sendMessage(
-                            userInRoom[key].userid,
-                            lang(userInRoom[key].lang, user.ava || 'Botak').other_to_botak
-                        ).catch(() => false);
-                    }
-                }
-            }
+            // Don't send notifications to room members when removing avatar
+            // This prevents the avatar removal from appearing as a chat message
 
         } else if (input.length <= maxLength && isValidAvatar(input)) {
             // Update user's avatar and reset the session
@@ -70,20 +58,8 @@ module.exports = async (ctx, user) => {
                 Markup.removeKeyboard()
             ).catch(() => false);
 
-            if (user.room !== '') {
-                // Notify others in the room of the avatar change
-                const userInRoomSnapshot = await db.adminDb.ref('users').orderByChild('room').equalTo(user.room).once('value');
-                const userInRoom = userInRoomSnapshot.val();
-
-                for (const key in userInRoom) {
-                    if (userInRoom[key].userid !== user.userid) {
-                        await ctx.telegram.sendMessage(
-                            userInRoom[key].userid,
-                            lang(userInRoom[key].lang, user.ava || 'Botak', input).other_change_ava
-                        ).catch(() => false);
-                    }
-                }
-            }
+            // Don't send notifications to room members when changing avatar
+            // This prevents the avatar change from appearing as a chat message
 
         } else {
             // Send error message for invalid avatar input

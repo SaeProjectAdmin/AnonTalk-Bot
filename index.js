@@ -143,45 +143,7 @@ server.on('error', (error) => {
 });
 
 // Handle custom avatar input
-async function handleCustomAvatarInput(ctx, message) {
-    try {
-        const user = await db.getUserByChatId(ctx.chat.id);
-        
-        if (!user) {
-            return ctx.reply('❌ User not found. Please try /start again.');
-        }
-        
-        // Validate custom avatar input (max 2 characters)
-        if (message.length > 2) {
-            const errorMessage = user.lang === 'Indonesia' ? 
-                '❌ Avatar terlalu panjang! Maksimal 2 karakter.' :
-                '❌ Avatar too long! Maximum 2 characters.';
-            return ctx.reply(errorMessage);
-        }
-        
-        // Update user's avatar
-        await db.collection('users').child(user.userid).update({ 
-            ava: message,
-            session: '' // Clear session
-        });
-        
-        const successMessage = user.lang === 'Indonesia' ? 
-            `✅ **Avatar berhasil diubah!**\n\nAvatar baru Anda: ${message}` :
-            `✅ **Avatar changed successfully!**\n\nYour new avatar: ${message}`;
-        
-        await ctx.reply(successMessage, {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: '🔙 Back to Avatar Menu', callback_data: 'avatar_back' }]
-                ]
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error handling custom avatar input:', error);
-        ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
-    }
-}
+
 
 // Bot initialization function
 async function initializeBot() {
@@ -621,16 +583,9 @@ async function initializeBot() {
             // Skip if it's a command
             if (message && !message.startsWith('/')) {
                 try {
-                    // Check if user is in avatar custom input mode
-                    const user = await db.getUserByChatId(ctx.chat.id);
-                    if (user && user.session === 'ava') {
-                        // Handle custom avatar input
-                        await handleCustomAvatarInput(ctx, message);
-                    } else {
-                        // Use session handler for room messaging and other features
-                        const sessionHandler = require('./session/sessions');
-                        await sessionHandler(ctx);
-                    }
+                    // Use session handler for all message processing
+                    const sessionHandler = require('./session/sessions');
+                    await sessionHandler(ctx);
                 } catch (error) {
                     console.error('Error in session handler:', error);
                     // Fallback to simple reply
