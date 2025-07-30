@@ -29,7 +29,7 @@ module.exports = async (ctx) => {
             `🎮 Gaming | 🎵 Music | 💻 Tech\n` +
             `⚽ Sports | 🍕 Food\n\n` +
             `🌐 Supported Languages:\n` +
-            `🇮🇩 Indonesia | 🇺🇸 English | 🇮🇩 Jawa`;
+            `🇮🇩 Indonesia | 🇺🇸 English`;
 
         // Send the enhanced help message
         await ctx.telegram.sendMessage(ctx.chat.id, helpMessage).catch(() => false);

@@ -27,8 +27,8 @@ app.get('/status', (req, res) => {
         status: 'Active',
         version: '2.0.0',
         features: [
-            '24 Rooms across 9 categories',
-            '3 Languages (Indonesia, English, Jawa)',
+            '16 Rooms across 8 categories',
+            '2 Languages (Indonesia, English)',
             'VIP System with priority features',
             'Enhanced media support',
             'Inline keyboard navigation'
@@ -145,7 +145,7 @@ async function initializeBot() {
         });
         
         // Handle all other callbacks using the new menu system
-        bot.action(/^(join_|lang_|vip_|help_|settings_|rooms_|donate_|pay_)/, async (ctx) => {
+        bot.action(/^(join_|lang_|vip_|help_|settings_|rooms_|donate_|pay_|avatar_)/, async (ctx) => {
             try {
                 await menuCallbacks.handleMenuCallbacks(ctx);
             } catch (error) {
@@ -173,7 +173,8 @@ async function initializeBot() {
                      '/vip - Info VIP\n' +
                      '/create-room - Buat room VIP\n\n' +
                      '💝 Lainnya:\n' +
-                     '/donate - Donasi');
+                     '/donate - Donasi\n\n' +
+                     '🌐 Default Language: Indonesia');
         });
         
         // Language command
@@ -192,6 +193,28 @@ async function initializeBot() {
                 await menu.showJoinMenu(ctx);
             } catch (error) {
                 console.error('Error in join command:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
+        });
+        
+        // Avatar command
+        bot.command('avatar', async (ctx) => {
+            try {
+                const avatarCommand = require('./command/avatar');
+                await avatarCommand(ctx);
+            } catch (error) {
+                console.error('Error in avatar command:', error);
+                ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
+            }
+        });
+        
+        // Exit command
+        bot.command('exit', async (ctx) => {
+            try {
+                const exitCommand = require('./command/exit');
+                await exitCommand(ctx);
+            } catch (error) {
+                console.error('Error in exit command:', error);
                 ctx.reply('❌ Terjadi kesalahan. Silakan coba lagi.');
             }
         });
@@ -270,7 +293,7 @@ async function initializeBot() {
         }
         
         console.log(`🎉 AnonTalk Bot v2.0.0 is ready!`);
-        console.log(`📋 Features: 24 rooms, 9 categories, 3 languages, VIP system`);
+        console.log(`📋 Features: 16 rooms, 8 categories, 2 languages, VIP system`);
         
         // Graceful shutdown
         process.once('SIGINT', () => {

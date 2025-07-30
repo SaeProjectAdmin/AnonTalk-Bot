@@ -47,7 +47,26 @@ const handleMenuCallbacks = async (ctx) => {
                 await handleStats(ctx);
                 break;
                 
+            // Avatar callbacks
+            case 'avatar_custom':
+            case 'avatar_remove':
+            case 'avatar_back':
+                await handleAvatarCallback(ctx, callbackData.replace('avatar_', ''));
+                break;
+                
+            // Handle specific avatar selections
+            case (callbackData.match(/^avatar_[^_]+$/) ? callbackData : null):
+                if (callbackData.startsWith('avatar_')) {
+                    const avatarType = callbackData.replace('avatar_', '');
+                    await handleAvatarCallback(ctx, avatarType);
+                }
+                break;
+                
             // Join room callbacks
+            case 'join_random_room':
+                await handleRandomRoom(ctx);
+                break;
+                
             case 'join_gaming':
             case 'join_general':
             case 'join_education':
@@ -133,29 +152,52 @@ const handleMenuCallbacks = async (ctx) => {
 
 // Individual callback handlers
 const handleStats = async (ctx) => {
-    const statsText = `📊 **Statistik AnonTalk Bot**
+    try {
+        // Get real statistics from Firebase
+        const stats = await db.getBotStatistics();
+        
+        // Format uptime
+        const uptimeHours = Math.floor(stats.uptime / 3600);
+        const uptimeMinutes = Math.floor((stats.uptime % 3600) / 60);
+        const uptimeText = `${uptimeHours}h ${uptimeMinutes}m`;
+        
+        // Format top categories
+        const topCategoriesText = stats.topCategories.length > 0 
+            ? stats.topCategories.map((cat, index) => 
+                `${index + 1}. ${cat.icon} ${cat.category} - ${cat.count} users`
+              ).join('\n')
+            : 'No data available';
+        
+        const statsText = `📊 **Statistik AnonTalk Bot**
 
-👥 **Users:** 1,234 active
-🏠 **Rooms:** 24 active
-💎 **VIP Users:** 89 users
-🌍 **Languages:** 3 supported
-📱 **Uptime:** 99.9%
+👥 **Users:** ${stats.totalUsers} total, ${stats.activeUsers} active
+🏠 **Rooms:** ${stats.totalRooms} total, ${stats.activeRooms} active
+💎 **VIP Users:** ${stats.vipUsers} users
+🌍 **Languages:** 2 supported
+📱 **Uptime:** ${uptimeText}
+💬 **Messages:** ${stats.totalMessages} total
 
 **Top Categories:**
-1. 🎮 Gaming - 156 users
-2. 💬 General - 134 users
-3. 💻 Technology - 98 users
-4. 🎵 Music - 87 users
-5. 🎬 Entertainment - 76 users`;
-    
-    await ctx.editMessageText(statsText, {
-        parse_mode: 'Markdown',
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
-            ]
-        }
-    });
+${topCategoriesText}`;
+        
+        await ctx.editMessageText(statsText, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                ]
+            }
+        });
+    } catch (error) {
+        console.error('Error getting statistics:', error);
+        await ctx.editMessageText('❌ Error loading statistics. Please try again.', {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                ]
+            }
+        });
+    }
 };
 
 const handleJoinRoom = async (ctx, category) => {
@@ -195,11 +237,112 @@ Pilih room yang ingin Anda masuki:
     });
 };
 
+const handleAvatarCallback = async (ctx, avatarType) => {
+    try {
+        const avatarCommand = require('./avatar');
+        await avatarCommand.handleAvatarCallback(ctx, avatarType);
+    } catch (error) {
+        console.error("Error handling avatar callback:", error);
+        await ctx.answerCbQuery("An error occurred. Please try again.");
+    }
+};
+
+const handleRandomRoom = async (ctx) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.editMessageText("❌ User not found. Please try /start again.", {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                    ]
+                }
+            });
+        }
+        
+        // Get all rooms for user's language (ignore category)
+        const rooms = await db.getRoomsByLanguage(user.lang);
+        
+        if (rooms.length === 0) {
+            return ctx.editMessageText("❌ No rooms available for your language.", {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                    ]
+                }
+            });
+        }
+        
+        // Filter available rooms (non-VIP rooms for non-VIP users, all rooms for VIP users)
+        const availableRooms = rooms.filter(room => {
+            if (room.vip && !isVIP) return false;
+            return room.member < room.maxMember;
+        });
+        
+        if (availableRooms.length === 0) {
+            const message = isVIP ? 
+                "❌ All rooms are full." : 
+                "❌ All available rooms are VIP-only. Upgrade to VIP to access.";
+            return ctx.editMessageText(message, {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                    ]
+                }
+            });
+        }
+        
+        // Select a random room
+        const randomIndex = Math.floor(Math.random() * availableRooms.length);
+        const randomRoom = availableRooms[randomIndex];
+        
+        // Get category info for display
+        const categoryInfo = db.ROOM_CATEGORIES[randomRoom.category];
+        const categoryName = categoryInfo ? (categoryInfo.name[user.lang] || categoryInfo.name['English']) : randomRoom.category;
+        
+        const randomText = `🎲 **Random Room Joined!**
+
+✅ **Room:** ${randomRoom.description || `${categoryInfo?.icon || '🏠'} ${categoryName}`}
+📂 **Category:** ${categoryName}
+👥 **Members:** ${randomRoom.member + 1}/${randomRoom.maxMember}
+${randomRoom.vip ? '👑 **VIP Room**' : ''}
+
+🎉 **Selamat!** Anda telah bergabung dengan room acak!`;
+        
+        // Actually join the room (call the join function)
+        const joinCommand = require('./join');
+        await joinCommand.handleRandomRoomCallback(ctx);
+        
+        // Update the message after joining
+        await ctx.editMessageText(randomText, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🎲 Join Random Room', callback_data: 'join_random_room' }],
+                    [{ text: '🔙 Back to Join Menu', callback_data: 'menu_join' }],
+                    [{ text: '🏠 Back to Main Menu', callback_data: 'menu_main' }]
+                ]
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error handling random room:", error);
+        await ctx.editMessageText("❌ An error occurred while joining random room. Please try again.", {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '🔙 Back to Menu', callback_data: 'menu_main' }]
+                ]
+            }
+        });
+    }
+};
+
 const handleLanguageChange = async (ctx, lang) => {
     const langNames = {
         'id': 'Indonesia',
         'en': 'English',
-        'jw': 'Jawa'
     };
     
     const langName = langNames[lang] || lang;
@@ -209,6 +352,11 @@ const handleLanguageChange = async (ctx, lang) => {
         const dbuser = db.collection('users');
         await dbuser.doc(ctx.chat.id.toString()).set({
             lang: lang,
+            userid: ctx.chat.id,
+            username: ctx.from.username || '',
+            first_name: ctx.from.first_name || '',
+            last_name: ctx.from.last_name || '',
+            registered_at: new Date().toISOString(),
             lastLangChange: new Date().toISOString()
         }, { merge: true });
     } catch (dbError) {

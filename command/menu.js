@@ -57,7 +57,7 @@ const menuKeyboards = {
                 { text: '🇺🇸 English', callback_data: 'lang_en' }
             ],
             [
-                { text: '🇯🇵 Jawa', callback_data: 'lang_jw' }
+    
             ],
             [
                 { text: '🔙 Back to Menu', callback_data: 'menu_main' }
@@ -179,7 +179,7 @@ Pilih kategori room yang ingin Anda masuki:
 Pilih bahasa yang Anda inginkan:
 • 🇮🇩 Indonesia
 • 🇺🇸 English  
-• 🇯🇵 Jawa`,
+
     
     vip: `💎 **VIP Features**
 
@@ -276,14 +276,42 @@ const handleMenu = async (ctx, menuType) => {
     }
 };
 
+// Auto-register user with Indonesian as default language
+const autoRegisterUser = async (ctx) => {
+    try {
+        const dbuser = db.collection('users');
+        const userDoc = await dbuser.doc(ctx.chat.id.toString()).get();
+        
+        // If user doesn't exist, register them with Indonesian as default
+        if (!userDoc.exists) {
+            await dbuser.doc(ctx.chat.id.toString()).set({
+                userid: ctx.chat.id,
+                username: ctx.from.username || '',
+                first_name: ctx.from.first_name || '',
+                last_name: ctx.from.last_name || '',
+                lang: 'id', // Default to Indonesian
+                registered_at: new Date().toISOString(),
+                last_activity: new Date().toISOString()
+            });
+            console.log(`✅ Auto-registered user ${ctx.chat.id} with Indonesian language`);
+        }
+    } catch (error) {
+        console.error('Error auto-registering user:', error);
+    }
+};
+
 // Export menu functions
 module.exports = {
     menuKeyboards,
     menuTexts,
     handleMenu,
+    autoRegisterUser,
     
     // Individual menu handlers
-    showMainMenu: (ctx) => handleMenu(ctx, 'main'),
+    showMainMenu: async (ctx) => {
+        await autoRegisterUser(ctx);
+        return handleMenu(ctx, 'main');
+    },
     showJoinMenu: (ctx) => handleMenu(ctx, 'join'),
     showLanguageMenu: (ctx) => handleMenu(ctx, 'language'),
     showVipMenu: (ctx) => handleMenu(ctx, 'vip'),

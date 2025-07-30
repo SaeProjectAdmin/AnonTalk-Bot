@@ -36,6 +36,22 @@ const showRoomCategories = async (ctx, user) => {
         const keyboard = [];
         let row = [];
         
+        // Add "Join Random Room" button at the top
+        const randomButtonText = user.lang === 'Indonesia' ? '🎲 Join Room Acak' : 
+                         
+                                '🎲 Join Random Room';
+        
+        keyboard.push([{
+            text: randomButtonText,
+            callback_data: 'join_random_room'
+        }]);
+        
+        // Add separator
+        keyboard.push([{
+            text: '📂 Pilih Kategori / Choose Category',
+            callback_data: 'separator'
+        }]);
+        
         categories.forEach((category, index) => {
             const categoryInfo = db.ROOM_CATEGORIES[category];
             const categoryName = categoryInfo.name[user.lang] || categoryInfo.name['English'];
@@ -76,6 +92,55 @@ const showRoomCategories = async (ctx, user) => {
     } catch (error) {
         console.error("Error showing room categories:", error);
         ctx.telegram.sendMessage(ctx.chat.id, "An error occurred. Please try again.");
+    }
+};
+
+// Handle random room join callback
+module.exports.handleRandomRoomCallback = async (ctx) => {
+    try {
+        const user = await db.getUserByChatId(ctx.chat.id);
+        const isVIP = await db.isUserVIP(ctx.chat.id);
+        
+        if (!user) {
+            return ctx.answerCbQuery("User not found. Please try /start again.");
+        }
+        
+        // Get all rooms for user's language (ignore category)
+        const rooms = await db.getRoomsByLanguage(user.lang);
+        
+        if (rooms.length === 0) {
+            return ctx.answerCbQuery("No rooms available.");
+        }
+        
+        // Filter available rooms (non-VIP rooms for non-VIP users, all rooms for VIP users)
+        const availableRooms = rooms.filter(room => {
+            if (room.vip && !isVIP) return false;
+            return room.member < room.maxMember;
+        });
+        
+        if (availableRooms.length === 0) {
+            const message = isVIP ? 
+                "All rooms are full." : 
+                "All available rooms are VIP-only. Upgrade to VIP to access.";
+            return ctx.answerCbQuery(message);
+        }
+        
+        // Select a random room
+        const randomIndex = Math.floor(Math.random() * availableRooms.length);
+        const randomRoom = availableRooms[randomIndex];
+        
+        // Join the random room
+        await joinRoom(ctx, user, randomRoom);
+        
+        const randomMessage = user.lang === 'Indonesia' ? '🎲 Anda telah bergabung dengan room acak!' :
+                    
+                            '🎲 You have joined a random room!';
+        
+        ctx.answerCbQuery(randomMessage);
+        
+    } catch (error) {
+        console.error("Error handling random room callback:", error);
+        ctx.answerCbQuery("An error occurred. Please try again.");
     }
 };
 

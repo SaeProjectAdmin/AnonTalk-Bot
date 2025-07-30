@@ -21,7 +21,7 @@ module.exports = async (ctx, user) => {
                 const messages = {
                     'Indonesia': `❌ File terlalu besar. Ukuran maksimal untuk ${mediaType} adalah ${isVIP ? '200MB' : '50MB'}.`,
                     'English': `❌ File too large. Maximum size for ${mediaType} is ${isVIP ? '200MB' : '50MB'}.`,
-                    'Jawa': `❌ File gedhe banget. Ukuran maksimal kanggo ${mediaType} yaiku ${isVIP ? '200MB' : '50MB'}.`
+
                 };
                 
                 await ctx.telegram.sendMessage(ctx.chat.id, messages[user.lang] || messages['English']);
@@ -120,7 +120,7 @@ module.exports = async (ctx, user) => {
             const messages = {
                 'Indonesia': `✅ Pesan berhasil dikirim ke ${successCount} anggota.`,
                 'English': `✅ Message sent successfully to ${successCount} members.`,
-                'Jawa': `✅ Pesen kasil dikirim menyang ${successCount} anggota.`
+
             };
             
             await ctx.telegram.sendMessage(ctx.chat.id, messages[user.lang] || messages['English']);
@@ -128,7 +128,7 @@ module.exports = async (ctx, user) => {
             const messages = {
                 'Indonesia': '✅ Pesan terkirim. Anda adalah satu-satunya anggota di room ini.',
                 'English': '✅ Message sent. You are the only member in this room.',
-                'Jawa': '✅ Pesen kasil dikirim. Sampeyan mung anggota siji ing kamar iki.'
+
             };
             
             await ctx.telegram.sendMessage(ctx.chat.id, messages[user.lang] || messages['English']);

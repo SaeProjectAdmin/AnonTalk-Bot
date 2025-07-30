@@ -129,14 +129,7 @@ module.exports = {
                     how_to: '💳 How to Donate:\n1. Click the button below\n2. Choose your package\n3. Make payment\n4. Enjoy VIP features!\n\n',
                     thanks: '🙏 Thank you for your support!'
                 },
-                'Jawa': {
-                    title: '💝 Dhukung AnonTalk Bot\n\n',
-                    description: 'Dhukung pangembangan bot iki kanthi menehi donasi. Saben donasi bakal mbantu kita kanggo:\n\n',
-                    benefits: '✨ Manfaat Donasi:\n• 🚀 Ngembangake fitur anyar\n• 🔧 Ndandani bug lan error\n• 📱 Ningkatake performa bot\n• 🎨 UI/UX sing luwih apik\n• 🌐 Dhukungan basa tambahan\n\n',
-                    packages: '💰 Paket Donasi:\n\n📅 Harian: Rp 5.000\n• Akses VIP 24 jam\n• Kabeh fitur VIP\n\n📅 Mingguan: Rp 25.000\n• Akses VIP 7 dina\n• Kabeh fitur VIP\n• Diskon 28%\n\n📅 Bulanan: Rp 75.000\n• Akses VIP 30 dina\n• Kabeh fitur VIP\n• Diskon 50%\n• Prioritas paling dhuwur\n\n',
-                    how_to: '💳 Cara Donasi:\n1. Klik tombol ing ngisor\n2. Pilih paket sing dikarepake\n3. Tindakake pembayaran\n4. Nikmati fitur VIP!\n\n',
-                    thanks: '🙏 Matur nuwun atas dhukungane!'
-                }
+
             };
 
             const message = messages[user.lang] || messages['English'];

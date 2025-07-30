@@ -47,14 +47,7 @@ const showVIPFeatures = async (ctx, userLang) => {
             status: '💎 Status: VIP Active\n⏰ Valid: Forever\n\n',
             thanks: '🙏 Thank you for supporting AnonTalk Bot!'
         },
-        'Jawa': {
-            title: '👑 Fitur VIP Sampeyan\n\n',
-            features: '✨ Fitur VIP Aktif:\n• 🏠 Kamar pribadi eksklusif\n• 👤 Avatar tanpa wates karakter\n• ⚡ Prioritas gabung kamar\n• 🎨 Fitur chat lanjutan\n• 🎯 Dhukungan prioritas\n• 📊 Statistik chat pribadi\n• 🔒 Kamar VIP khusus\n• 🎬 Kirim video tanpa wates\n• 🏗️ Gawe kamar custom\n\n',
-            rooms: '🏠 Kamar VIP sing Kasedhiya:\n• /join - Pilih kategori kamar\n• 👑 Kamar VIP kanggo saben basa\n• ⚡ Prioritas nalika kamar kebak\n• 📈 Kapasitas 30 anggota (vs 20 regular)\n\n',
-            commands: '🛠️ Perintah VIP:\n• /join - Gabung kamar nganggo kategori\n• /create-room <nama> - Gawe kamar custom\n• /avatar <teks> - Set avatar tanpa wates\n• /vip-stats - Deleng statistik VIP\n• /rooms - Deleng kabeh kamar\n\n',
-            status: '💎 Status: VIP Aktif\n⏰ Berlaku: Selamane\n\n',
-            thanks: '🙏 Matur nuwun wis dhukung AnonTalk Bot!'
-        }
+
     };
 
     const message = messages[userLang] || messages['English'];
@@ -81,14 +74,7 @@ const showVIPInfo = async (ctx, userLang) => {
             how_to: '💎 How to get VIP:\nUse /donate to choose a package and make payment.\n\n',
             current_status: '❌ Status: Not VIP\n💡 Upgrade to VIP for exclusive features!'
         },
-        'Jawa': {
-            title: '👑 Fitur VIP AnonTalk Bot\n\n',
-            features: '✨ Fitur VIP:\n• 🏠 Kamar pribadi eksklusif\n• 👤 Avatar tanpa wates karakter\n• ⚡ Prioritas gabung kamar\n• 🎨 Fitur chat lanjutan\n• 🎯 Dhukungan prioritas\n• 📊 Statistik chat pribadi\n• 🔒 Kamar VIP khusus\n• 🎬 Kirim video tanpa wates\n• 🏗️ Gawe kamar custom\n\n',
-            benefits: '💎 Keuntungan VIP:\n• Akses menyang kamar VIP eksklusif\n• Avatar tanpa wates karakter\n• Prioritas nalika gabung kamar kebak\n• Fitur chat sing luwih canggih\n• Dhukungan pelanggan prioritas\n• Statistik panggunaan pribadi\n• Kamar nganggo kapasitas luwih gedhe\n• Kirim video tanpa wates ukuran\n• Gawe kamar custom pribadi\n\n',
-            plans: '💰 Paket VIP (Rupiah):\n\n📅 Harian: Rp 5.000\n• Akses VIP 24 jam\n• Kabeh fitur VIP\n\n📅 Mingguan: Rp 25.000\n• Akses VIP 7 dina\n• Kabeh fitur VIP\n• Diskon 28%\n\n📅 Bulanan: Rp 75.000\n• Akses VIP 30 dina\n• Kabeh fitur VIP\n• Diskon 50%\n• Prioritas paling dhuwur\n\n',
-            how_to: '💎 Cara entuk VIP:\nGunakake /donate kanggo milih paket lan nindakake pembayaran.\n\n',
-            current_status: '❌ Status: Dudu VIP\n💡 Upgrade menyang VIP kanggo fitur eksklusif!'
-        }
+
     };
 
     const message = messages[userLang] || messages['English'];
@@ -158,20 +144,33 @@ module.exports.showVIPStats = async (ctx) => {
             return ctx.reply('Only VIP users can view VIP statistics. Use /vip to learn more.');
         }
         
-        // Get user's room history and statistics
-        const stats = {
-            totalRooms: 0,
-            vipRooms: 0,
-            totalMessages: 0,
-            vipSince: 'Unknown'
-        };
+        // Get real user statistics from Firebase
+        const stats = await db.getUserStatistics(ctx.chat.id);
         
-        // This would be implemented with actual statistics tracking
+        // Format VIP since date
+        const vipSinceText = stats.vipSince 
+            ? new Date(stats.vipSince).toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })
+            : 'Unknown';
+        
+        // Format join date
+        const joinDateText = stats.joinDate 
+            ? new Date(stats.joinDate).toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })
+            : 'Unknown';
+        
         const statsMessage = `📊 VIP Statistics for ${user.ava || 'User'}:\n\n` +
-            `🏠 Total Rooms Joined: ${stats.totalRooms}\n` +
-            `👑 VIP Rooms Accessed: ${stats.vipRooms}\n` +
+            `🏠 Total Rooms Joined: ${stats.totalRoomsJoined}\n` +
+            `👑 VIP Rooms Accessed: ${stats.vipRoomsAccessed}\n` +
             `💬 Total Messages: ${stats.totalMessages}\n` +
-            `⏰ VIP Since: ${stats.vipSince}\n\n` +
+            `⏰ VIP Since: ${vipSinceText}\n` +
+            `📅 Member Since: ${joinDateText}\n\n` +
             `💎 Status: VIP Active`;
         
         await ctx.reply(statsMessage);

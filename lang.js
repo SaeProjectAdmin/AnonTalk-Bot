@@ -1,7 +1,6 @@
 const cfg = require('./config')
 const getLangCode = (lang) => {
     if (lang == 'Indonesia' || lang == 'indonesia') return 'id'
-    if (lang == 'Jawa' || lang == 'jawa') return 'jw'
     return 'en'
 }
 module.exports = (lang, par1 = '', par2 = '', par3 = '', par4 = '') => {
@@ -20,8 +19,8 @@ module.exports = (lang, par1 = '', par2 = '', par3 = '', par4 = '') => {
             "other_change_ava": `${par1} mengubah avatar menjadi ${par2}`,
             "to_botak": `Kamu menjadi botak.`,
             "other_to_botak": `${par1} menjadi botak.`,
-            "current_ava": `Avatar kamu saat ini: ${par1}\nKirim emoji (misal: 🖌 atau 🎁) untuk mengubah avatar atau /cancel untuk membatalkan, /drop untuk menghapus.`,
-            "invalid_ava": `Kirim emoji, woy. Misal: 🖌 atau 🎁`,
+            "current_ava": `Avatar kamu saat ini: ${par1}\n\n✅ **Kirim salah satu:**\n• Emoji (contoh: 😀 🎮 🍕)\n• Huruf (contoh: A, AB, a, ab)\n• Angka (contoh: 1, 12)\n• Maksimal 2 karakter\n\nAtau /cancel untuk membatalkan, /drop untuk menghapus.`,
+            "invalid_ava": `❌ Avatar tidak valid!\n\n✅ **Yang diperbolehkan:**\n• Emoji (contoh: 😀 🎮 🍕)\n• Huruf (contoh: A, AB, a, ab)\n• Angka (contoh: 1, 12)\n• Maksimal 2 karakter`,
             "current_lang": `Bahasa kamu saat ini: ${par1}\nSilakan pilih bahasamu atau /cancel untuk membatalkan.`,
             "closed_room": `Room ${par1} tutup atau belum dibuka. Room dibuka pada ${par2}`,
             "donate": `Terima kasih. Silakan kunjungi ${par1}`,
@@ -55,7 +54,9 @@ module.exports = (lang, par1 = '', par2 = '', par3 = '', par4 = '') => {
 /rooms => menampilkan semua room di bahasamu
 /avatar => mengubah avatar
 /lang => mengubah bahasa
-/donate => memberikan donasi`,
+/donate => memberikan donasi
+
+🌐 Bahasa default: Indonesia`,
             // New enhanced messages
             "room_categories": `📂 Kategori Room:\n${par1}`,
             "vip_room_access": `👑 Akses Room VIP berhasil!`,
@@ -93,8 +94,8 @@ module.exports = (lang, par1 = '', par2 = '', par3 = '', par4 = '') => {
             "other_change_ava": `${par1} has change avatar to ${par2}`,
             "to_botak": `You become a botak.`,
             "other_to_botak": `${par1} become a botak.`,
-            "current_ava": `Your current avatar: ${par1}\nPlease send an emoticon (e.g: 🦋 or 🦄) to change your avatar or /cancel to cancel, /drop to remove.`,
-            "invalid_ava": `Please send an emotion. E.g: 🦋 or 🦄`,
+            "current_ava": `Your current avatar: ${par1}\n\n✅ **Send one of these:**\n• Emoji (example: 😀 🎮 🍕)\n• Letters (example: A, AB, a, ab)\n• Numbers (example: 1, 12)\n• Maximum 2 characters\n\nOr /cancel to cancel, /drop to remove.`,
+            "invalid_ava": `❌ Invalid avatar!\n\n✅ **Allowed:**\n• Emoji (example: 😀 🎮 🍕)\n• Letters (example: A, AB, a, ab)\n• Numbers (example: 1, 12)\n• Maximum 2 characters`,
             "current_lang": `Your current language: ${par1}\nPlease choose your language or /cancel to cancel.`,
             "closed_room": `Room ${par1} is closed. Room will be opened on ${par2}`,
             "donate": `Thank you. Please visit ${par1}`,
@@ -128,7 +129,9 @@ module.exports = (lang, par1 = '', par2 = '', par3 = '', par4 = '') => {
 /rooms => show all public room in this language
 /avatar => change your avatar
 /lang => change your language
-/donate => make a donation`,
+/donate => make a donation
+
+🌐 Default Language: Indonesia`,
             // New enhanced messages
             "room_categories": `📂 Room Categories:\n${par1}`,
             "vip_room_access": `👑 VIP Room access successful!`,
@@ -149,79 +152,6 @@ module.exports = (lang, par1 = '', par2 = '', par3 = '', par4 = '') => {
             "room_category_tech": `💻 Tech`,
             "room_category_sports": `⚽ Sports`,
             "room_category_food": `🍕 Food`,
-            "room_category_vip": `👑 VIP`
-        },
-
-        jw: {
-            "welcome": `Sugeng rawuh ing ${cfg.BOT_NAME}. Semoga betah.`,
-            "registered": `Sampeyan wis kadaptar, pencet /join kanggo gabung menyang kamar utawa /help kanggo nampilake kabeh perintah.`,
-            "other_join": `${par1} gabung menyang kamar.`,
-            "other_left": `${par1} ninggal kamar.`,
-            "join": `Sampeyan gabung menyang kamar.`,
-            "left": `Sampeyan ninggal kamar.`,
-            "people": `Saiki ana ${par1} wong ing kene`,
-            "other_people": `Ana ${par1} wong liyane ing kene.`,
-            "change_ava": `Ganti avatar dadi ${par1} sukses.`,
-            "change_lang": `Ganti basa dadi ${par1} sukses.`,
-            "other_change_ava": `${par1} ganti avatar dadi ${par2}`,
-            "to_botak": `Sampeyan dadi botak.`,
-            "other_to_botak": `${par1} dadi botak.`,
-            "current_ava": `Avatar sampeyan saiki: ${par1}\nKirim emoji (kayata: 🖌 utawa 🎁) kanggo ganti avatar utawa /cancel kanggo mbatalake, /drop kanggo mbusak.`,
-            "invalid_ava": `Kirim emoji, woy. Kayata: 🖌 utawa 🎁`,
-            "current_lang": `Basa sampeyan saiki: ${par1}\nMangga pilih basa sampeyan utawa /cancel kanggo mbatalake.`,
-            "closed_room": `Kamar ${par1} tutup utawa durung dibuka. Kamar dibuka ing ${par2}`,
-            "donate": `Matur nuwun. Mangga kunjungi ${par1}`,
-            "rooms": `Daftar kamar. \n${par1}`,
-            "join_room": `Sampeyan gabung menyang kamar ${par1}.`,
-            "room_full": `Gagal gabung menyang kamar. Kamar ${par1} kebak utawa ora kasedhiya.`,
-            "not_in_room": `Sampeyan ora ana ing kamar`,
-            "cancel": `OK. Dibatalke.`,
-            "invalid_cancel": `Ora ana sing kudu dibatalake.`,
-            "left_admin": `Sampeyan mungkasi chat admin.`,
-            "join_admin": `Sampeyan kehubung karo Admin AnonTalkID. \r\nMangga sampaikake saran, kritik, utawa keluhan babagan bot.\r\nKanggo mungkasi pencet /exit`,
-            "list": `Ing kene ana: \n${par1}`,
-            "nonvip": `Sampeyan dudu pangguna VIP.`,
-            "new_private": `Sampeyan mung gawe kamar pribadi lan saiki sampeyan ana ing kamar pribadi.\nSampeyan bisa ngundang kancane kanthi cara /invite [nickname].`,
-            "invitation": `${par2} ngundang sampeyan menyang kamar pribadi ${par1}. Terima?`,
-            "invite_friend": `Nunggu ${par1}`,
-            "invitation_rejected": `${par1} nolak undangan sampeyan.`,
-            "invitation_accepted": `${par1} gabung liwat undangan.`,
-            "invitation_sent": `${par1} ngundang ${par2}`,
-            "current_nickname": `Nickname sampeyan saiki: ${par1}\nMangga kirim nickname anyar sampeyan utawa /cancel kanggo mbatalake, /drop kanggo mbusak.`,
-            "invalid_nickname": `Nickname ora valid. Nickname kudu 6-16 karakter lan mung alfanumerik lan underscore.`,
-            "exist_nickname": `Nickname wis ana.`,
-            "drop_nickname": `Nickname sampeyan wis dibusak.`,
-            "change_nickname": `Nickname diganti dadi ${par1} sukses.`,
-            "invalid_command": `Ora ngerti perintah sampeyan.\nCoba pencet /join kanggo gabung menyang kamar.\nPencet /help kanggo nampilake kabeh perintah.`,
-            "help": `Perintah:
-/start => miwiti bot
-/join => gabung menyang kamar publik
-/join <room_id> => gabung menyang kamar publik <room_id>
-/exit => metu saka kamar
-/rooms => nampilake kabeh kamar ing basa sampeyan
-/avatar => ganti avatar sampeyan
-/lang => ganti basa sampeyan
-/donate => menehi donasi`,
-            // New enhanced messages
-            "room_categories": `📂 Kategori Kamar:\n${par1}`,
-            "vip_room_access": `👑 Akses Kamar VIP sukses!`,
-            "vip_priority_join": `⚡ Prioritas VIP: Sampeyan gabung menyang kamar kebak.`,
-            "room_info": `📋 Informasi Kamar:\n🏷️ Jeneng: ${par1}\n👥 Anggota: ${par2}/${par3}\n🏷️ Kategori: ${par4}`,
-            "select_language": `🌐 Pilih basa sing sampeyan pengin:`,
-            "language_changed": `✅ Basa sukses diganti menyang ${par1}`,
-            "vip_features": `👑 Fitur VIP Aktif:\n• 🏠 Kamar VIP eksklusif\n• ⚡ Prioritas gabung\n• 🎨 Avatar khusus\n• 📊 Statistik pribadi`,
-            "vip_upgrade": `💎 Upgrade menyang VIP kanggo fitur eksklusif!`,
-            "room_full_vip": `👑 Kamar kebak, nanging sampeyan VIP! Sampeyan entuk prioritas.`,
-            "custom_room_created": `🏗️ Kamar custom sukses digawe: ${par1}`,
-            "invalid_room_id": `❌ ID Kamar ora valid utawa ora ditemokake.`,
-            "room_category_general": `💬 Umum`,
-            "room_category_chill": `😌 Santai`,
-            "room_category_random": `🎲 Acak`,
-            "room_category_gaming": `🎮 Game`,
-            "room_category_music": `🎵 Musik`,
-            "room_category_tech": `💻 Teknologi`,
-            "room_category_sports": `⚽ Olahraga`,
-            "room_category_food": `🍕 Panganan`,
             "room_category_vip": `👑 VIP`
         }
     }

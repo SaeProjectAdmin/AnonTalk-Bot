@@ -21,7 +21,7 @@ module.exports = async (ctx) => {
             const messages = {
                 'Indonesia': '❌ Hanya pengguna VIP yang dapat membuat room custom.\n\nGunakan /vip untuk informasi lebih lanjut.',
                 'English': '❌ Only VIP users can create custom rooms.\n\nUse /vip for more information.',
-                'Jawa': '❌ Mung pangguna VIP sing bisa gawe kamar custom.\n\nGunakake /vip kanggo informasi luwih lanjut.'
+        
             };
             
             await ctx.reply(messages[user.lang] || messages['English']);
@@ -35,7 +35,7 @@ module.exports = async (ctx) => {
             const messages = {
                 'Indonesia': '❌ Nama room tidak boleh kosong!\n\nContoh: /create-room Nama Room Saya',
                 'English': '❌ Room name cannot be empty!\n\nExample: /create-room My Room Name',
-                'Jawa': '❌ Jeneng kamar ora boleh kosong!\n\nConto: /create-room Jeneng Kamar Kula'
+        
             };
             
             await ctx.reply(messages[user.lang] || messages['English']);
@@ -46,7 +46,7 @@ module.exports = async (ctx) => {
             const messages = {
                 'Indonesia': '❌ Nama room terlalu panjang! Maksimal 50 karakter.',
                 'English': '❌ Room name too long! Maximum 50 characters.',
-                'Jawa': '❌ Jeneng kamar kakehan dawa! Maksimal 50 karakter.'
+        
             };
             
             await ctx.reply(messages[user.lang] || messages['English']);
@@ -95,12 +95,7 @@ const createCustomRoom = async (ctx, user, roomName) => {
                 features: '💎 VIP features active!\n• Exclusive private room\n• 30 member capacity\n• Advanced chat features\n• Full room control\n\n',
                 help: '💡 Start chatting!\nShare room ID with other VIP users to join!\n\n📋 Room Commands:\n• /list - View members\n• /exit - Leave room'
             },
-            'Jawa': {
-                title: '🏗️ Kamar Custom Digawe!\n\n',
-                info: `🏠 Kamar: ${roomName}\n👑 Jenis: VIP Custom\n👥 Anggota: 1 (Sampeyan)\n🌐 Basa: ${user.lang}\n🆔 ID: ${roomId}\n\n`,
-                features: '💎 Fitur VIP aktif!\n• Kamar pribadi eksklusif\n• Kapasitas 30 anggota\n• Fitur chat lanjutan\n• Kontrol penuh kamar\n\n',
-                help: '💡 Miwiti chatting!\nBagikake ID kamar karo pangguna VIP liyane kanggo gabung!\n\n📋 Perintah Kamar:\n• /list - Deleng anggota\n• /exit - Metu saka kamar'
-            }
+
         };
 
         const message = messages[user.lang] || messages['English'];

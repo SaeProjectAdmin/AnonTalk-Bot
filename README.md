@@ -20,7 +20,7 @@ AnonTalk Bot is a comprehensive anonymous chat bot for Telegram with an expanded
 ### 🌐 Language Support
 - **🇮🇩 Indonesia** - Full Indonesian support
 - **🇺🇸 English** - Full English support
-- **🇮🇩 Jawa** - Full Javanese support (NEW!)
+
 
 ### 🏠 Room Structure
 - **24 Default Rooms** (8 per language)
@@ -144,7 +144,7 @@ BOT_NAME=AnonTalk Bot
 ```json
 {
   "userid": "telegram_user_id",
-  "lang": "Indonesia|English|Jawa",
+  "lang": "Indonesia|English",
   "ava": "user_avatar_emoji",
   "room": "current_room_id",
   "session": "current_session_state"

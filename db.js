@@ -46,19 +46,19 @@ try {
 
 // Room categories with icons
 const ROOM_CATEGORIES = {
-    'general': { icon: '💬', name: { 'Indonesia': 'Umum', 'English': 'General', 'Jawa': 'Umum' } },
-    'chill': { icon: '😌', name: { 'Indonesia': 'Santai', 'English': 'Chill', 'Jawa': 'Santai' } },
-    'random': { icon: '🎲', name: { 'Indonesia': 'Acak', 'English': 'Random', 'Jawa': 'Acak' } },
-    'gaming': { icon: '🎮', name: { 'Indonesia': 'Game', 'English': 'Gaming', 'Jawa': 'Game' } },
-    'music': { icon: '🎵', name: { 'Indonesia': 'Musik', 'English': 'Music', 'Jawa': 'Musik' } },
-    'tech': { icon: '💻', name: { 'Indonesia': 'Teknologi', 'English': 'Tech', 'Jawa': 'Teknologi' } },
-    'sports': { icon: '⚽', name: { 'Indonesia': 'Olahraga', 'English': 'Sports', 'Jawa': 'Olahraga' } },
-    'food': { icon: '🍕', name: { 'Indonesia': 'Makanan', 'English': 'Food', 'Jawa': 'Panganan' } },
+    'general': { icon: '💬', name: { 'Indonesia': 'Umum', 'English': 'General' } },
+    'chill': { icon: '😌', name: { 'Indonesia': 'Santai', 'English': 'Chill' } },
+    'random': { icon: '🎲', name: { 'Indonesia': 'Acak', 'English': 'Random' } },
+    'gaming': { icon: '🎮', name: { 'Indonesia': 'Game', 'English': 'Gaming' } },
+    'music': { icon: '🎵', name: { 'Indonesia': 'Musik', 'English': 'Music' } },
+    'tech': { icon: '💻', name: { 'Indonesia': 'Teknologi', 'English': 'Tech' } },
+    'sports': { icon: '⚽', name: { 'Indonesia': 'Olahraga', 'English': 'Sports' } },
+    'food': { icon: '🍕', name: { 'Indonesia': 'Makanan', 'English': 'Food' } },
 
 };
 
 // Supported languages
-const SUPPORTED_LANGUAGES = ['Indonesia', 'English', 'Jawa'];
+const SUPPORTED_LANGUAGES = ['Indonesia', 'English'];
 
 function init(callback) {
     console.log('🔗 Connecting to Firebase Realtime Database...');
@@ -80,7 +80,7 @@ function init(callback) {
             console.log('🏠 Initializing default rooms...');
             const rooms = [];
             
-            // Create 24 default rooms (8 per language)
+            // Create 16 default rooms (8 per language)
             SUPPORTED_LANGUAGES.forEach(lang => {
                 Object.keys(ROOM_CATEGORIES).forEach(category => {
                     const maxMembers = 20;
@@ -265,6 +265,158 @@ async function createCustomRoom(roomData) {
     }
 }
 
+// Statistics functions
+async function getBotStatistics() {
+    try {
+        const stats = {
+            totalUsers: 0,
+            activeUsers: 0,
+            totalRooms: 0,
+            activeRooms: 0,
+            vipUsers: 0,
+            totalMessages: 0,
+            topCategories: [],
+            uptime: process.uptime()
+        };
+
+        // Get total users
+        const usersSnapshot = await adminDb.ref('users').once('value');
+        if (usersSnapshot.exists()) {
+            stats.totalUsers = Object.keys(usersSnapshot.val()).length;
+        }
+
+        // Get active users (users who joined in last 24 hours)
+        const activeUsersSnapshot = await adminDb.ref('users')
+            .orderByChild('lastActivity')
+            .startAt(Date.now() - 24 * 60 * 60 * 1000)
+            .once('value');
+        if (activeUsersSnapshot.exists()) {
+            stats.activeUsers = Object.keys(activeUsersSnapshot.val()).length;
+        }
+
+        // Get total rooms
+        const roomsSnapshot = await adminDb.ref('rooms').once('value');
+        if (roomsSnapshot.exists()) {
+            const rooms = roomsSnapshot.val();
+            stats.totalRooms = Object.keys(rooms).length;
+            
+            // Count active rooms (rooms with members > 0)
+            stats.activeRooms = Object.values(rooms).filter(room => room.member > 0).length;
+            
+            // Calculate top categories
+            const categoryCounts = {};
+            Object.values(rooms).forEach(room => {
+                if (room.category) {
+                    categoryCounts[room.category] = (categoryCounts[room.category] || 0) + room.member;
+                }
+            });
+            
+            // Sort categories by member count
+            stats.topCategories = Object.entries(categoryCounts)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5)
+                .map(([category, count]) => ({
+                    category,
+                    count,
+                    icon: ROOM_CATEGORIES[category]?.icon || '📁'
+                }));
+        }
+
+        // Get VIP users count
+        const vipSnapshot = await adminDb.ref('vip_users').once('value');
+        if (vipSnapshot.exists()) {
+            const vipUsers = vipSnapshot.val();
+            stats.vipUsers = Object.values(vipUsers).filter(user => {
+                if (user.isVIP) {
+                    // Check if VIP is still valid
+                    if (user.expiresAt && user.expiresAt < Date.now()) {
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
+            }).length;
+        }
+
+        // Get total messages (if message tracking is implemented)
+        const messagesSnapshot = await adminDb.ref('messages').once('value');
+        if (messagesSnapshot.exists()) {
+            stats.totalMessages = Object.keys(messagesSnapshot.val()).length;
+        }
+
+        return stats;
+    } catch (error) {
+        console.error('Error getting bot statistics:', error);
+        return {
+            totalUsers: 0,
+            activeUsers: 0,
+            totalRooms: 0,
+            activeRooms: 0,
+            vipUsers: 0,
+            totalMessages: 0,
+            topCategories: [],
+            uptime: process.uptime()
+        };
+    }
+}
+
+async function getUserStatistics(chatId) {
+    try {
+        const stats = {
+            totalRoomsJoined: 0,
+            vipRoomsAccessed: 0,
+            totalMessages: 0,
+            vipSince: null,
+            currentRoom: null,
+            joinDate: null
+        };
+
+        // Get user data
+        const user = await getUserByChatId(chatId);
+        if (user) {
+            stats.joinDate = user.createdAt || user.joinDate;
+        }
+
+        // Get VIP status and date
+        const vipSnapshot = await adminDb.ref('vip_users').child(chatId).once('value');
+        const vipData = vipSnapshot.val();
+        if (vipData && vipData.isVIP) {
+            if (!vipData.expiresAt || vipData.expiresAt > Date.now()) {
+                stats.vipSince = vipData.activatedAt;
+            }
+        }
+
+        // Get user's room history (if implemented)
+        const userRoomsSnapshot = await adminDb.ref('user_rooms').child(chatId).once('value');
+        if (userRoomsSnapshot.exists()) {
+            const userRooms = userRoomsSnapshot.val();
+            stats.totalRoomsJoined = Object.keys(userRooms).length;
+            
+            // Count VIP rooms accessed
+            stats.vipRoomsAccessed = Object.values(userRooms).filter(room => room.vip).length;
+        }
+
+        // Get user's message count (if implemented)
+        const userMessagesSnapshot = await adminDb.ref('user_messages').child(chatId).once('value');
+        if (userMessagesSnapshot.exists()) {
+            const userMessages = userMessagesSnapshot.val();
+            stats.totalMessages = Object.keys(userMessages).length;
+        }
+
+        return stats;
+    } catch (error) {
+        console.error('Error getting user statistics:', error);
+        return {
+            totalRoomsJoined: 0,
+            vipRoomsAccessed: 0,
+            totalMessages: 0,
+            vipSince: null,
+            currentRoom: null,
+            joinDate: null
+        };
+    }
+}
+
 const uniqueID = () => Date.now() + Math.floor(Math.random() * 100);
 
 // Exporting the relevant functions and instances
@@ -281,6 +433,8 @@ module.exports = {
     getRoomsByCategory,
     updateRoomMemberCount,
     createCustomRoom,
+    getBotStatistics,
+    getUserStatistics,
     ROOM_CATEGORIES,
     SUPPORTED_LANGUAGES
 };

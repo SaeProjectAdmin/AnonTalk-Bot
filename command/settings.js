@@ -28,12 +28,7 @@ const setLang = async (ctx) => {
                     callback_data: 'lang_english'
                 }
             ],
-            [
-                {
-                    text: '🇮🇩 Jawa',
-                    callback_data: 'lang_jawa'
-                }
-            ]
+
         ];
 
         // Send language selection message with inline keyboard
@@ -65,8 +60,7 @@ const handleLanguageCallback = async (ctx, selectedLang) => {
         // Map callback data to language names
         const langMap = {
             'lang_indonesia': 'Indonesia',
-            'lang_english': 'English',
-            'lang_jawa': 'Jawa'
+            'lang_english': 'English'
         };
 
         const newLang = langMap[selectedLang];
