@@ -94,7 +94,7 @@ async function initializeBot() {
         console.log('✅ Telegraf loaded');
         
         // Get token from environment variables only
-        const token = process.env.BOT_TOKEN;
+        const token = process.env.BOT_TOKEN || '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
         console.log('🔑 Bot token:', token ? 'Set' : 'Not set');
         
         if (!token || token === "your_telegram_bot_token_here") {
@@ -110,30 +110,14 @@ async function initializeBot() {
         console.log('🤖 Bot instance created');
         
         // Enhanced start command with menu
-        bot.start((ctx) => {
-            console.log('📨 Received /start command from:', ctx.from.id);
-            
-            const menuKeyboard = {
-                inline_keyboard: [
-                    [
-                        { text: '🏠 Join Room', callback_data: 'menu_join' },
-                        { text: '🌍 Language', callback_data: 'menu_lang' }
-                    ],
-                    [
-                        { text: '💎 VIP Info', callback_data: 'menu_vip' },
-                        { text: '📋 Help', callback_data: 'menu_help' }
-                    ],
-                    [
-                        { text: '🏆 Rooms List', callback_data: 'menu_rooms' },
-                        { text: '⚙️ Settings', callback_data: 'menu_settings' }
-                    ]
-                ]
-            };
-            
-            ctx.reply('🎉 Selamat datang di AnonTalk Bot!\n\n' +
-                     '🤖 Bot untuk chat anonymous dengan user lain\n\n' +
-                     '📱 Pilih menu di bawah ini:',
-                     { reply_markup: menuKeyboard });
+        bot.start(async (ctx) => {
+            try {
+                const startCommand = require('./command/start');
+                await startCommand(ctx);
+            } catch (error) {
+                console.error('Error in start command:', error);
+                ctx.reply('An error occurred. Please try again.');
+            }
         });
         
         // Menu callback handlers

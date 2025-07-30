@@ -3,36 +3,49 @@ const lang = require('../lang');
 
 module.exports = async (ctx) => {
     try {
-        // Kirim pesan panduan kepada pengguna sebelum pengecekan registrasi
-        await ctx.telegram.sendMessage(ctx.chat.id, 
-            `Selamat datang di bot kami! Berikut adalah cara penggunaan bot ini:
+        console.log('📨 Received /start command from:', ctx.from.id);
+        
+        // Create main menu keyboard
+        const menuKeyboard = {
+            inline_keyboard: [
+                [
+                    { text: '🏠 Join Room', callback_data: 'menu_join' },
+                    { text: '🌍 Language', callback_data: 'menu_lang' }
+                ],
+                [
+                    { text: '💎 VIP Info', callback_data: 'menu_vip' },
+                    { text: '📋 Help', callback_data: 'menu_help' }
+                ],
+                [
+                    { text: '🏆 Rooms List', callback_data: 'menu_rooms' },
+                    { text: '⚙️ Settings', callback_data: 'menu_settings' }
+                ]
+            ]
+        };
+        
+        // Send welcome message with menu
+        await ctx.reply('🎉 Selamat datang di AnonTalk Bot!\n\n' +
+                       '🤖 Bot untuk chat anonymous dengan user lain\n\n' +
+                       '📱 Pilih menu di bawah ini:',
+                       { reply_markup: menuKeyboard });
 
-1. /help - Untuk melihat daftar perintah yang tersedia.
-2. /join - Untuk bergabung dalam ruang chat.
-3. /cancel - Untuk membatalkan perintah yang sedang berlangsung.
-4. /settings - Untuk melihat atau mengubah pengaturan Anda.
-5. /exit - Untuk keluar dari ruang chat.
+        // Optional: Check user registration (simplified)
+        try {
+            const dbuser = db.collection('users');
+            const userSnapshot = await dbuser.doc(ctx.chat.id.toString()).get();
+            const user = userSnapshot.data();
 
-Gunakan perintah ini sesuai kebutuhan Anda. Jika ada pertanyaan, ketik /help!`);
-
-        const dbuser = db.collection('users'); // Gunakan Firestore atau sesuaikan jika Realtime Database
-
-        // Fetch the user data from Firebase based on the Telegram chat ID
-        const userSnapshot = await dbuser.doc(ctx.chat.id.toString()).get();
-        const user = userSnapshot.data();
-
-        if (user && user.lang && user.lang !== '') {
-            await ctx.telegram.sendMessage(ctx.chat.id, lang(user.lang).registered)
-                .catch((err) => {
-                    console.error('Error sending message:', err);
-                });
-
-        } else {
-            // Jika user belum terdaftar atau belum mengatur bahasa
-            ctx.telegram.sendMessage(ctx.chat.id, "User is not registered or language preference is missing.");
+            if (user && user.lang && user.lang !== '') {
+                console.log(`User ${ctx.chat.id} is registered with language: ${user.lang}`);
+            } else {
+                console.log(`User ${ctx.chat.id} is not registered yet`);
+            }
+        } catch (dbError) {
+            console.log('Database check skipped:', dbError.message);
         }
+        
     } catch (err) {
-        console.error('Error fetching user:', err);
-        ctx.telegram.sendMessage(ctx.chat.id, "An error occurred while checking registration.");
+        console.error('Error in start command:', err);
+        ctx.reply('An error occurred. Please try again.');
     }
 };
