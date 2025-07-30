@@ -16,7 +16,8 @@
       "**/app.yaml",
       "**/.git/**",
       "**/deploy.bat"
-    ]
+    ],
+    "alwaysDeployFromSource": true
   },
   "functions": {
     "source": ".",
@@ -28,4 +29,4 @@
   "database": {
     "rules": "database.rules.json"
   }
-} 
+}
