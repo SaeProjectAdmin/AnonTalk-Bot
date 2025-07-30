@@ -12,6 +12,9 @@
     "build": "echo 'No build step required for Node.js app'",
     "test": "echo 'No tests specified'"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "keywords": [
     "telegram",
     "bot",
@@ -33,8 +36,5 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
