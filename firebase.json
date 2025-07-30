@@ -5,7 +5,13 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "**/public/**"
+      "**/public/**",
+      "**/*.log",
+      "**/CHANGELOG.md",
+      "**/README_NEW.md",
+      "**/deploy.sh",
+      "**/vercel.json",
+      "**/app.yaml"
     ]
   },
   "functions": {

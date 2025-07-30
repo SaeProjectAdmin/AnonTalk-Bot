@@ -11,19 +11,45 @@ const token = cfg.BOT_TOKEN;
 const bot = new Telegraf(token);
 const app = express();
 
-const port = process.env.PORT || 4000;
+// Configure port for Firebase hosting
+const port = process.env.PORT || 8080;
 const secretPath = '/' + token;
 
+// Middleware setup
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// Health check endpoint for Firebase hosting
 app.get('/', (req, res) => {
-    res.status(200).json('Welcome, your app is working well');
+    res.status(200).json({
+        status: 'OK',
+        message: 'AnonTalk Bot is running',
+        version: '2.0.0',
+        timestamp: new Date().toISOString()
+    });
 });
 
-app.listen(port, () => console.log(`Server ready on port ${port}.`));
+// Bot status endpoint
+app.get('/status', (req, res) => {
+    res.status(200).json({
+        bot: 'AnonTalk Bot',
+        status: 'Active',
+        version: '2.0.0',
+        features: [
+            '24 Rooms across 9 categories',
+            '3 Languages (Indonesia, English, Jawa)',
+            'VIP System with priority features',
+            'Enhanced media support',
+            'Inline keyboard navigation'
+        ],
+        uptime: process.uptime()
+    });
+});
 
+// Initialize database and start bot
 db.init(() => {
+    console.log('🗄️ Database initialized successfully');
+    
     // Bot middleware
     bot.use(async (ctx, next) => {
         await userCheck(ctx, next);
@@ -129,25 +155,65 @@ db.init(() => {
         }
     });
 
-    // Bot webhook setup
-    bot.launch();
-    app.use(bot.webhookCallback(secretPath));
+    // Start bot based on environment
+    if (process.env.NODE_ENV === 'production') {
+        // Production: Use webhook for Firebase hosting
+        console.log('🚀 Starting bot in production mode with webhook...');
+        
+        // Set webhook
+        const webhookUrl = process.env.WEBHOOK_URL || `https://${process.env.FIREBASE_PROJECT_ID}.web.app${secretPath}`;
+        
+        bot.telegram.setWebhook(webhookUrl).then(() => {
+            console.log(`✅ Webhook set to: ${webhookUrl}`);
+        }).catch((error) => {
+            console.error('❌ Error setting webhook:', error);
+        });
+        
+        // Use webhook callback
+        app.use(bot.webhookCallback(secretPath));
+        
+        // Start server
+        app.listen(port, () => {
+            console.log(`🌐 AnonTalk Bot server running on port ${port}`);
+            console.log(`🤖 Bot webhook endpoint: ${secretPath}`);
+            console.log(`📊 Status endpoint: /status`);
+        });
+    } else {
+        // Development: Use polling
+        console.log('🔧 Starting bot in development mode with polling...');
+        bot.launch();
+        
+        // Start server for development
+        app.listen(port, () => {
+            console.log(`🌐 AnonTalk Bot development server running on port ${port}`);
+            console.log(`📊 Status endpoint: /status`);
+        });
+    }
     
-    // Log when app is ready
-    console.log(`Referral app listening on port ${port}!`);
+    console.log(`🎉 AnonTalk Bot v2.0.0 is ready!`);
+    console.log(`📋 Features: 24 rooms, 9 categories, 3 languages, VIP system`);
     
     // Graceful shutdown
     process.once('SIGINT', () => {
-        console.log('Shutting down bot...');
+        console.log('🛑 Shutting down bot...');
         bot.stop('SIGINT');
         db.close();
     });
     
     process.once('SIGTERM', () => {
-        console.log('Shutting down bot...');
+        console.log('🛑 Shutting down bot...');
         bot.stop('SIGTERM');
         db.close();
     });
+});
+
+// Error handling for uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 module.exports = app;
