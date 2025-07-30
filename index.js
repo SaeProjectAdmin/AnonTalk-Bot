@@ -93,7 +93,8 @@ async function initializeBot() {
         const { Telegraf } = require('telegraf');
         console.log('✅ Telegraf loaded');
         
-        const token = process.env.BOT_TOKEN;
+        // Use hardcoded token for testing
+        const token = process.env.BOT_TOKEN || '8044181903:AAEHhxOSIaETpn0Wp2zTYf3_QBX0KTi2hy0';
         console.log('🔑 Bot token:', token ? 'Set' : 'Not set');
         
         if (!token || token === "your_telegram_bot_token_here") {
