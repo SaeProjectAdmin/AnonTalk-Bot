@@ -178,8 +178,7 @@ Pilih kategori room yang ingin Anda masuki:
 
 Pilih bahasa yang Anda inginkan:
 • 🇮🇩 Indonesia
-• 🇺🇸 English  
-
+• 🇺🇸 English`,
     
     vip: `💎 **VIP Features**
 
